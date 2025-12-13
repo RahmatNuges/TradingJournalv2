@@ -2,6 +2,20 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import type { SpotTransaction, FuturesTrade, BalanceHistory } from '@/types';
 
 // =====================================================
+// AUTH HELPER
+// =====================================================
+
+/**
+ * Get current authenticated user's ID
+ */
+async function getCurrentUserId(): Promise<string | null> {
+    if (!supabase) return null;
+
+    const { data: { user } } = await supabase.auth.getUser();
+    return user?.id || null;
+}
+
+// =====================================================
 // SPOT TRANSACTIONS (DCA Support)
 // =====================================================
 
@@ -11,9 +25,16 @@ export async function getSpotTransactions(): Promise<SpotTransaction[]> {
         return [];
     }
 
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return [];
+    }
+
     const { data, error } = await supabase
         .from('spot_transactions')
         .select('*')
+        .eq('user_id', userId)
         .order('date', { ascending: false });
 
     if (error) {
@@ -24,15 +45,21 @@ export async function getSpotTransactions(): Promise<SpotTransaction[]> {
     return data || [];
 }
 
-export async function addSpotTransaction(transaction: Omit<SpotTransaction, 'id' | 'created_at'>): Promise<SpotTransaction | null> {
+export async function addSpotTransaction(transaction: Omit<SpotTransaction, 'id' | 'created_at' | 'user_id'>): Promise<SpotTransaction | null> {
     if (!supabase) {
         console.warn('Supabase not configured');
         return null;
     }
 
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return null;
+    }
+
     const { data, error } = await supabase
         .from('spot_transactions')
-        .insert([transaction])
+        .insert([{ ...transaction, user_id: userId }])
         .select()
         .single();
 
@@ -73,9 +100,16 @@ export async function getFuturesTrades(): Promise<FuturesTrade[]> {
         return [];
     }
 
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return [];
+    }
+
     const { data, error } = await supabase
         .from('futures_trades')
         .select('*')
+        .eq('user_id', userId)
         .order('date', { ascending: false });
 
     if (error) {
@@ -86,15 +120,21 @@ export async function getFuturesTrades(): Promise<FuturesTrade[]> {
     return data || [];
 }
 
-export async function addFuturesTrade(trade: Omit<FuturesTrade, 'id' | 'created_at'>): Promise<FuturesTrade | null> {
+export async function addFuturesTrade(trade: Omit<FuturesTrade, 'id' | 'created_at' | 'user_id'>): Promise<FuturesTrade | null> {
     if (!supabase) {
         console.warn('Supabase not configured');
         return null;
     }
 
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return null;
+    }
+
     const { data, error } = await supabase
         .from('futures_trades')
-        .insert([trade])
+        .insert([{ ...trade, user_id: userId }])
         .select()
         .single();
 
@@ -156,9 +196,16 @@ export async function getBalanceHistory(): Promise<BalanceHistory[]> {
         return [];
     }
 
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return [];
+    }
+
     const { data, error } = await supabase
         .from('balance_history')
         .select('*')
+        .eq('user_id', userId)
         .order('date', { ascending: false });
 
     if (error) {
@@ -169,15 +216,21 @@ export async function getBalanceHistory(): Promise<BalanceHistory[]> {
     return data || [];
 }
 
-export async function addBalanceEntry(entry: Omit<BalanceHistory, 'id' | 'created_at'>): Promise<BalanceHistory | null> {
+export async function addBalanceEntry(entry: Omit<BalanceHistory, 'id' | 'created_at' | 'user_id'>): Promise<BalanceHistory | null> {
     if (!supabase) {
         console.warn('Supabase not configured');
         return null;
     }
 
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return null;
+    }
+
     const { data, error } = await supabase
         .from('balance_history')
-        .insert([entry])
+        .insert([{ ...entry, user_id: userId }])
         .select()
         .single();
 

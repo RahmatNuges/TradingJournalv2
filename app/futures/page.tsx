@@ -8,11 +8,13 @@ import { TradeTable } from "@/components/futures/trade-table";
 import { TradeDialog } from "@/components/futures/trade-dialog";
 import { BalanceDialog } from "@/components/futures/balance-dialog";
 import { PositionCalculator } from "@/components/futures/position-calculator";
-import { formatCurrency, formatPercent } from "@/lib/calculations";
+import { formatPercent } from "@/lib/calculations";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getFuturesTrades, getFuturesStats, getCurrentBalance } from "@/lib/data-service";
 import type { FuturesTrade } from "@/types";
 
 export default function FuturesPage() {
+    const { formatCurrency } = useFormatCurrency();
     const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
     const [isBalanceDialogOpen, setIsBalanceDialogOpen] = useState(false);
     const [loading, setLoading] = useState(true);
@@ -59,17 +61,17 @@ export default function FuturesPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Trading Futures</h1>
-                    <p className="text-muted-foreground">Jurnal dan evaluasi trading</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold">Trading Futures</h1>
+                    <p className="text-muted-foreground text-sm">Jurnal dan evaluasi trading</p>
                 </div>
                 <div className="flex gap-2">
-                    <Button variant="outline" onClick={() => setIsBalanceDialogOpen(true)}>
-                        Sesuaikan Saldo
+                    <Button variant="outline" size="sm" onClick={() => setIsBalanceDialogOpen(true)} className="text-xs sm:text-sm">
+                        <span className="hidden sm:inline">Sesuaikan</span> Saldo
                     </Button>
-                    <Button onClick={() => setIsTradeDialogOpen(true)}>
-                        + Catat Trade
+                    <Button size="sm" onClick={() => setIsTradeDialogOpen(true)} className="text-xs sm:text-sm">
+                        + <span className="hidden sm:inline">Catat</span> Trade
                     </Button>
                 </div>
             </div>
@@ -77,7 +79,7 @@ export default function FuturesPage() {
             {/* Balance Card */}
             <Card>
                 <CardContent className="pt-6">
-                    <div className="flex items-center justify-between">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                         <div>
                             <p className="text-sm text-muted-foreground">Current Balance</p>
                             <p className="text-3xl font-bold font-mono">

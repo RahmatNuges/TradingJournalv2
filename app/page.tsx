@@ -6,10 +6,12 @@ import { Badge } from "@/components/ui/badge";
 import { EquityChart } from "@/components/dashboard/equity-chart";
 import { CalendarHeatmap } from "@/components/dashboard/calendar-heatmap";
 import { AllocationChart } from "@/components/dashboard/allocation-chart";
-import { formatCurrency, formatPercent } from "@/lib/calculations";
+import { formatPercent } from "@/lib/calculations";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getFuturesStats, getCurrentBalance, getSpotHoldingsSummary, getFuturesTrades } from "@/lib/data-service";
 
 export default function DashboardPage() {
+  const { formatCurrency } = useFormatCurrency();
   const [loading, setLoading] = useState(true);
   const [data, setData] = useState({
     futuresBalance: 0,

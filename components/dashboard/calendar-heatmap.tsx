@@ -70,10 +70,10 @@ export function CalendarHeatmap({ data }: CalendarHeatmapProps) {
                     <div
                         key={index}
                         className={`aspect-square flex items-center justify-center rounded text-xs font-mono ${day ? getColorClass(day.pnl) : ""
-                            } ${day?.pnl !== null ? 'cursor-pointer' : ''}`}
+                            } ${day && day.pnl !== null ? 'cursor-pointer' : ''}`}
                         title={day && day.pnl !== null ? `${day.date}: ${formatCurrency(day.pnl)}` : undefined}
                     >
-                        {day?.day || ""}
+                        {day ? day.day : ""}
                     </div>
                 ))}
             </div>

@@ -6,7 +6,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { HoldingsTable } from "@/components/spot/holdings-table";
 import { TransactionDialog } from "@/components/spot/transaction-dialog";
-import { formatCurrency, formatPercent } from "@/lib/calculations";
+import { formatPercent } from "@/lib/calculations";
+import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getSpotHoldingsSummary } from "@/lib/data-service";
 
 interface HoldingSummary {
@@ -25,6 +26,7 @@ interface HoldingSummary {
 }
 
 export default function SpotPage() {
+    const { formatCurrency } = useFormatCurrency();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [holdings, setHoldings] = useState<HoldingSummary[]>([]);
@@ -81,18 +83,18 @@ export default function SpotPage() {
     return (
         <div className="space-y-6">
             {/* Header */}
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-3xl font-bold">Portfolio Spot</h1>
-                    <p className="text-muted-foreground">DCA & HODL Investing</p>
+                    <h1 className="text-2xl sm:text-3xl font-bold">Portfolio Spot</h1>
+                    <p className="text-muted-foreground text-sm">DCA & HODL Investing</p>
                 </div>
-                <Button onClick={() => setIsDialogOpen(true)}>
+                <Button size="sm" onClick={() => setIsDialogOpen(true)} className="w-fit">
                     + Tambah Transaksi
                 </Button>
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <Card>
                     <CardContent className="pt-4">
                         <p className="text-sm text-muted-foreground">Total Value</p>

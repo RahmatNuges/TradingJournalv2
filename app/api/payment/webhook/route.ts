@@ -9,6 +9,14 @@ const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
 const XENDIT_WEBHOOK_TOKEN = process.env.XENDIT_WEBHOOK_TOKEN!;
 
+// GET handler for Xendit webhook connectivity test
+export async function GET() {
+    return NextResponse.json({
+        status: "ok",
+        message: "Webhook endpoint is active"
+    });
+}
+
 export async function POST(request: NextRequest) {
     try {
         // Verify webhook token

@@ -77,6 +77,7 @@ export default function SpotPage() {
 
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchData();
         // Set up polling for real-time updates every 30 seconds
         const interval = setInterval(() => {

@@ -6,6 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import { EquityChart } from "@/components/dashboard/equity-chart";
 import { CalendarHeatmap } from "@/components/dashboard/calendar-heatmap";
 import { AllocationChart } from "@/components/dashboard/allocation-chart";
+import { PortfolioDistribution } from "@/components/dashboard/portfolio-distribution";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getFuturesStats, getCurrentBalance, getSpotHoldingsSummary, getFuturesTrades } from "@/lib/data-service";
 import { getCurrentPrices } from "@/lib/price-service";
@@ -29,8 +30,6 @@ export function DashboardView() {
     const [allocationData, setAllocationData] = useState<Array<{ symbol: string; name: string; value: number }>>([]);
 
     const fetchData = useCallback(async () => {
-        setLoading(true);
-
         const [stats, balance, holdings, trades] = await Promise.all([
             getFuturesStats(),
             getCurrentBalance(),
@@ -84,6 +83,7 @@ export function DashboardView() {
     }, []);
 
     useEffect(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
         fetchData();
     }, [fetchData]);
 
@@ -98,32 +98,52 @@ export function DashboardView() {
                 <p className="text-muted-foreground mt-1">Overview portfolio Anda</p>
             </div>
 
-            {/* Total Portfolio Card */}
-            <Card className="bg-gradient-to-br from-card to-secondary/30 border-primary/10 shadow-sm relative overflow-hidden">
-                <div className="absolute top-0 right-0 p-6 opacity-5">
-                    <GripHorizontal className="h-24 w-24" />
-                </div>
-                <CardContent className="pt-6 relative z-10">
-                    <div className="text-center">
-                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-3">
-                            Total Portfolio Value
-                        </p>
-                        <p className="text-4xl md:text-5xl font-bold font-mono tracking-tight mb-4">
-                            {loading ? "..." : formatCurrency(totalPortfolio)}
-                        </p>
-                        {!loading && (
-                            <Badge
-                                variant={totalPnL >= 0 ? "default" : "destructive"}
-                                className={`text-base px-4 py-1.5 transition-colors ${totalPnL >= 0
-                                    ? "bg-profit/10 text-profit hover:bg-profit/20 border-profit/20 border"
-                                    : "bg-loss/10 text-loss hover:bg-loss/20 border-loss/20 border"}`}
-                            >
-                                {totalPnL >= 0 ? "+" : ""}{formatCurrency(totalPnL)}
-                            </Badge>
-                        )}
+            {/* Total Portfolio Card + Distribution Chart - Side by Side */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                {/* Total Portfolio Card */}
+                <Card className="bg-gradient-to-br from-card to-secondary/30 border-primary/10 shadow-sm relative overflow-hidden">
+                    <div className="absolute top-0 right-0 p-6 opacity-5">
+                        <GripHorizontal className="h-24 w-24" />
                     </div>
-                </CardContent>
-            </Card>
+                    <CardContent className="pt-6 relative z-10 h-full flex flex-col justify-center">
+                        <div className="text-center">
+                            <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-3">
+                                Total Portfolio Value
+                            </p>
+                            <p className="text-4xl md:text-5xl font-bold font-mono tracking-tight mb-4">
+                                {loading ? "..." : formatCurrency(totalPortfolio)}
+                            </p>
+                            {!loading && (
+                                <Badge
+                                    variant={totalPnL >= 0 ? "default" : "destructive"}
+                                    className={`text-base px-4 py-1.5 transition-colors ${totalPnL >= 0
+                                        ? "bg-profit/10 text-profit hover:bg-profit/20 border-profit/20 border"
+                                        : "bg-loss/10 text-loss hover:bg-loss/20 border-loss/20 border"}`}
+                                >
+                                    {totalPnL >= 0 ? "+" : ""}{formatCurrency(totalPnL)}
+                                </Badge>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+
+                {/* Portfolio Distribution - Next to Portfolio Value */}
+                <Card className="overflow-hidden">
+                    <CardHeader className="border-b bg-muted/40 pb-4">
+                        <CardTitle className="flex items-center gap-2">
+                            <PieChartIcon className="h-4 w-4 text-muted-foreground" />
+                            Portfolio Distribution
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-4">
+                        <PortfolioDistribution
+                            spotValue={data.spotValue}
+                            futuresValue={data.futuresBalance}
+                            compact
+                        />
+                    </CardContent>
+                </Card>
+            </div>
 
             {/* Summary Cards Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -227,12 +247,14 @@ export function DashboardView() {
                         <AllocationChart data={allocationData} />
                     </CardContent>
                 </Card>
+
+
             </div>
         </div>
     );
 }
 
-function LayoutGridIcon(props: any) {
+function LayoutGridIcon(props: React.ComponentProps<'svg'>) {
     return (
         <svg
             {...props}
@@ -254,7 +276,7 @@ function LayoutGridIcon(props: any) {
     )
 }
 
-function PieChartIcon(props: any) {
+function PieChartIcon(props: React.ComponentProps<'svg'>) {
     return (
         <svg
             {...props}

@@ -14,6 +14,20 @@ const inter = Inter({
 export const metadata: Metadata = {
   title: "Catat Cuanmu - Professional Trading Journal",
   description: "Track your crypto futures and spot portfolio with professional analytics",
+  icons: {
+    icon: [
+      {
+        media: "(prefers-color-scheme: light)",
+        url: "/LogoLight.svg",
+        href: "/LogoLight.svg",
+      },
+      {
+        media: "(prefers-color-scheme: dark)",
+        url: "/LogoDark.svg",
+        href: "/LogoDark.svg",
+      },
+    ],
+  },
 };
 
 export default function RootLayout({

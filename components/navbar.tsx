@@ -6,9 +6,10 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
-import { Menu, X, LogOut, User, LayoutDashboard, TrendingUp, Wallet } from "lucide-react";
+import { Menu, X, LogOut, User, LayoutDashboard, TrendingUp, Wallet, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { Logo } from "@/components/ui/logo";
 
 const navItems = [
     { href: "/", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
@@ -34,10 +35,8 @@ export function Navbar() {
         <nav className="sticky top-0 z-50 w-full border-b border-border/40 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
             <div className="container mx-auto flex h-14 max-w-7xl items-center px-4">
                 {/* Brand */}
-                <Link href="/" className="mr-4 md:mr-8 flex items-center space-x-2">
-                    <Wallet className="h-6 w-6 text-primary" />
-                    <span className="font-bold text-lg hidden sm:inline">Catat Cuanmu</span>
-                    <span className="font-bold text-lg sm:hidden">CC</span>
+                <Link href="/" className="mr-4 md:mr-8 flex items-center">
+                    <Logo />
                 </Link>
 
                 {/* Desktop Navigation Links - only show when logged in */}
@@ -71,6 +70,19 @@ export function Navbar() {
                         <>
                             {user ? (
                                 <div className="hidden md:flex items-center gap-2">
+                                    {/* Admin Button - only show if is_admin */}
+                                    {user.user_metadata?.is_admin === true && (
+                                        <Link href="/admin">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                className="gap-2 border-purple-500/50 text-purple-500 hover:bg-purple-500/10"
+                                            >
+                                                <Shield className="h-4 w-4" />
+                                                Admin
+                                            </Button>
+                                        </Link>
+                                    )}
                                     <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-secondary/50">
                                         <User className="h-4 w-4" />
                                         <span className="text-sm text-muted-foreground max-w-[150px] truncate">

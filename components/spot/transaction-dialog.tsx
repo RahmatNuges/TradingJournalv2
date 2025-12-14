@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { addSpotTransaction } from "@/lib/data-service";
 
 interface TransactionDialogProps {
@@ -121,12 +122,10 @@ export function TransactionDialog({ open, onOpenChange, onSave }: TransactionDia
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Harga (USD)</Label>
-                            <Input
-                                type="number"
-                                step="any"
+                            <Label>Harga</Label>
+                            <CurrencyInput
                                 value={formData.priceUsd}
-                                onChange={(e) => setFormData({ ...formData, priceUsd: e.target.value })}
+                                onChange={(v) => setFormData({ ...formData, priceUsd: v })}
                                 placeholder="42000"
                             />
                         </div>

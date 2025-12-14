@@ -26,7 +26,9 @@ import {
     determineResult,
     formatCurrency,
 } from "@/lib/calculations";
+import { useCurrency, Currency } from "@/contexts/currency-context";
 import { addFuturesTrade } from "@/lib/data-service";
+import { cn } from "@/lib/utils";
 
 interface TradeDialogProps {
     open: boolean;
@@ -35,23 +37,55 @@ interface TradeDialogProps {
 }
 
 export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
+    const { exchangeRate } = useCurrency();
     const [saving, setSaving] = useState(false);
+    const [inputCurrency, setInputCurrency] = useState<Currency>("USD");
+
+    // Store display values (in selected currency)
+    const [displayData, setDisplayData] = useState({
+        entryPrice: "",
+        exitPrice: "",
+        positionSize: "",
+        stopLoss: "",
+        takeProfit: "",
+    });
+
     const [formData, setFormData] = useState({
         date: new Date().toISOString().slice(0, 16),
         pair: "BTCUSDT",
         direction: "LONG" as "LONG" | "SHORT",
         leverage: "10",
-        entryPrice: "",
-        exitPrice: "",
-        positionSize: "",
-        feePercent: "0.05", // Default fee percentage
-        stopLoss: "",
-        takeProfit: "",
+        feePercent: "0.05",
         strategy: "",
         notes: "",
     });
 
-    // Calculated values
+    // Calculated values (always in USD)
+    const [usdValues, setUsdValues] = useState({
+        entryPrice: 0,
+        exitPrice: 0,
+        positionSize: 0,
+        stopLoss: 0,
+        takeProfit: 0,
+    });
+
+    // Calculate USD values whenever display values or currency changes
+    useEffect(() => {
+        const convert = (val: string) => {
+            const num = parseFloat(val) || 0;
+            return inputCurrency === "IDR" ? num / exchangeRate : num;
+        };
+
+        setUsdValues({
+            entryPrice: convert(displayData.entryPrice),
+            exitPrice: convert(displayData.exitPrice),
+            positionSize: convert(displayData.positionSize),
+            stopLoss: convert(displayData.stopLoss),
+            takeProfit: convert(displayData.takeProfit),
+        });
+    }, [displayData, inputCurrency, exchangeRate]);
+
+    // Preview values
     const [preview, setPreview] = useState({
         pnl: 0,
         feeAmount: 0,
@@ -61,15 +95,15 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
         result: "BE" as "WIN" | "LOSS" | "BE",
     });
 
-    // Calculate preview whenever form changes
+    // Calculate preview whenever USD values change
     useEffect(() => {
-        const entry = parseFloat(formData.entryPrice) || 0;
-        const exit = parseFloat(formData.exitPrice) || 0;
-        const size = parseFloat(formData.positionSize) || 0;
+        const entry = usdValues.entryPrice;
+        const exit = usdValues.exitPrice;
+        const size = usdValues.positionSize;
         const leverage = parseFloat(formData.leverage) || 1;
         const feePercent = parseFloat(formData.feePercent) || 0;
-        const sl = parseFloat(formData.stopLoss) || null;
-        const tp = parseFloat(formData.takeProfit) || null;
+        const sl = usdValues.stopLoss || null;
+        const tp = usdValues.takeProfit || null;
 
         if (entry > 0 && exit > 0 && size > 0) {
             const pnl = calculatePnL(formData.direction, entry, exit, size, leverage);
@@ -83,7 +117,20 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
         } else {
             setPreview({ pnl: 0, feeAmount: 0, netPnl: 0, pnlPercent: 0, rrr: null, result: "BE" });
         }
-    }, [formData]);
+    }, [usdValues, formData.direction, formData.leverage, formData.feePercent]);
+
+    // Toggle currency - just switch mode, don't convert values
+    const toggleCurrency = () => {
+        setInputCurrency(inputCurrency === "USD" ? "IDR" : "USD");
+        // Clear display values when switching currency to avoid confusion
+        setDisplayData({
+            entryPrice: "",
+            exitPrice: "",
+            positionSize: "",
+            stopLoss: "",
+            takeProfit: "",
+        });
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -93,9 +140,9 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
             pair: formData.pair,
             direction: formData.direction,
             leverage: parseFloat(formData.leverage) || 10,
-            entry_price: parseFloat(formData.entryPrice),
-            exit_price: parseFloat(formData.exitPrice),
-            position_size: parseFloat(formData.positionSize),
+            entry_price: usdValues.entryPrice,
+            exit_price: usdValues.exitPrice,
+            position_size: usdValues.positionSize,
             fee_percent: parseFloat(formData.feePercent),
             fee_amount: preview.feeAmount,
             pnl: preview.pnl,
@@ -103,8 +150,8 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
             pnl_percent: preview.pnlPercent,
             rrr: preview.rrr,
             result: preview.result,
-            stop_loss: formData.stopLoss ? parseFloat(formData.stopLoss) : null,
-            take_profit: formData.takeProfit ? parseFloat(formData.takeProfit) : null,
+            stop_loss: usdValues.stopLoss || null,
+            take_profit: usdValues.takeProfit || null,
             strategy: formData.strategy || null,
             notes: formData.notes || null,
             date: formData.date,
@@ -117,28 +164,61 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
             onOpenChange(false);
             onSave?.();
             // Reset form
+            setDisplayData({
+                entryPrice: "",
+                exitPrice: "",
+                positionSize: "",
+                stopLoss: "",
+                takeProfit: "",
+            });
             setFormData({
                 date: new Date().toISOString().slice(0, 16),
                 pair: "BTCUSDT",
                 direction: "LONG",
                 leverage: "10",
-                entryPrice: "",
-                exitPrice: "",
-                positionSize: "",
                 feePercent: "0.05",
-                stopLoss: "",
-                takeProfit: "",
                 strategy: "",
                 notes: "",
             });
+            setInputCurrency("USD");
         }
     };
+
+    const currencyPrefix = inputCurrency === "USD" ? "$" : "Rp";
+    const currencyStep = inputCurrency === "USD" ? "0.01" : "1";
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-                <DialogHeader>
+                <DialogHeader className="flex flex-row items-center justify-between">
                     <DialogTitle>Catat Trade Baru</DialogTitle>
+                    {/* Global Currency Switch - Toggle Style */}
+                    <button
+                        type="button"
+                        onClick={toggleCurrency}
+                        className="flex items-center gap-1 p-1 rounded-full bg-secondary border border-border"
+                    >
+                        <span
+                            className={cn(
+                                "px-3 py-1 rounded-full text-sm font-medium transition-all",
+                                inputCurrency === "USD"
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            $ USD
+                        </span>
+                        <span
+                            className={cn(
+                                "px-3 py-1 rounded-full text-sm font-medium transition-all",
+                                inputCurrency === "IDR"
+                                    ? "bg-primary text-primary-foreground shadow-sm"
+                                    : "text-muted-foreground hover:text-foreground"
+                            )}
+                        >
+                            Rp IDR
+                        </span>
+                    </button>
                 </DialogHeader>
 
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -180,22 +260,22 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
                     {/* Row 2: Entry, Exit, Leverage */}
                     <div className="grid grid-cols-3 gap-4">
                         <div className="space-y-2">
-                            <Label>Entry Price</Label>
+                            <Label>Entry Price ({currencyPrefix})</Label>
                             <Input
                                 type="number"
-                                step="any"
-                                value={formData.entryPrice}
-                                onChange={(e) => setFormData({ ...formData, entryPrice: e.target.value })}
+                                step={currencyStep}
+                                value={displayData.entryPrice}
+                                onChange={(e) => setDisplayData({ ...displayData, entryPrice: e.target.value })}
                                 placeholder="0.00"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Exit Price</Label>
+                            <Label>Exit Price ({currencyPrefix})</Label>
                             <Input
                                 type="number"
-                                step="any"
-                                value={formData.exitPrice}
-                                onChange={(e) => setFormData({ ...formData, exitPrice: e.target.value })}
+                                step={currencyStep}
+                                value={displayData.exitPrice}
+                                onChange={(e) => setDisplayData({ ...displayData, exitPrice: e.target.value })}
                                 placeholder="0.00"
                             />
                         </div>
@@ -213,12 +293,12 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
                     {/* Row 3: Position Size, Fee % */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Position Size ($)</Label>
+                            <Label>Position Size ({currencyPrefix})</Label>
                             <Input
                                 type="number"
-                                step="any"
-                                value={formData.positionSize}
-                                onChange={(e) => setFormData({ ...formData, positionSize: e.target.value })}
+                                step={currencyStep}
+                                value={displayData.positionSize}
+                                onChange={(e) => setDisplayData({ ...displayData, positionSize: e.target.value })}
                                 placeholder="100"
                             />
                         </div>
@@ -246,22 +326,22 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
                     {/* Row 4: SL, TP (optional) */}
                     <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
-                            <Label>Stop Loss (opsional)</Label>
+                            <Label>Stop Loss ({currencyPrefix}) - opsional</Label>
                             <Input
                                 type="number"
-                                step="any"
-                                value={formData.stopLoss}
-                                onChange={(e) => setFormData({ ...formData, stopLoss: e.target.value })}
+                                step={currencyStep}
+                                value={displayData.stopLoss}
+                                onChange={(e) => setDisplayData({ ...displayData, stopLoss: e.target.value })}
                                 placeholder="Untuk RRR"
                             />
                         </div>
                         <div className="space-y-2">
-                            <Label>Take Profit (opsional)</Label>
+                            <Label>Take Profit ({currencyPrefix}) - opsional</Label>
                             <Input
                                 type="number"
-                                step="any"
-                                value={formData.takeProfit}
-                                onChange={(e) => setFormData({ ...formData, takeProfit: e.target.value })}
+                                step={currencyStep}
+                                value={displayData.takeProfit}
+                                onChange={(e) => setDisplayData({ ...displayData, takeProfit: e.target.value })}
                                 placeholder="Untuk RRR"
                             />
                         </div>

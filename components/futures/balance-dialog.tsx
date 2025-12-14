@@ -17,6 +17,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { CurrencyInput } from "@/components/ui/currency-input";
 import { addBalanceEntry } from "@/lib/data-service";
 
 interface BalanceDialogProps {
@@ -93,13 +94,12 @@ export function BalanceDialog({ open, onOpenChange, onSave, currentBalance = 0 }
                     </div>
 
                     <div className="space-y-2">
-                        <Label>Jumlah ($)</Label>
-                        <Input
-                            type="number"
-                            step="any"
+                        <Label>Jumlah</Label>
+                        <CurrencyInput
                             value={amount}
-                            onChange={(e) => setAmount(e.target.value)}
+                            onChange={setAmount}
                             placeholder="0.00"
+                            disabled={saving}
                         />
                     </div>
 
@@ -125,4 +125,3 @@ export function BalanceDialog({ open, onOpenChange, onSave, currentBalance = 0 }
         </Dialog>
     );
 }
-

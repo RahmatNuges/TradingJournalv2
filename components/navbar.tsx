@@ -6,14 +6,14 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
-import { Menu, X, LogOut, User } from "lucide-react";
+import { Menu, X, LogOut, User, LayoutDashboard, TrendingUp, Wallet } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 
 const navItems = [
-    { href: "/", label: "Dashboard", icon: "📊" },
-    { href: "/futures", label: "Futures", icon: "📈" },
-    { href: "/spot", label: "Spot", icon: "💰" },
+    { href: "/", label: "Dashboard", icon: <LayoutDashboard className="h-4 w-4" /> },
+    { href: "/futures", label: "Futures", icon: <TrendingUp className="h-4 w-4" /> },
+    { href: "/spot", label: "Spot", icon: <Wallet className="h-4 w-4" /> },
 ];
 
 export function Navbar() {
@@ -35,9 +35,9 @@ export function Navbar() {
             <div className="container mx-auto flex h-14 max-w-7xl items-center px-4">
                 {/* Brand */}
                 <Link href="/" className="mr-4 md:mr-8 flex items-center space-x-2">
-                    <span className="text-xl">📒</span>
-                    <span className="font-bold text-lg hidden sm:inline">Trading Journal</span>
-                    <span className="font-bold text-lg sm:hidden">TJ</span>
+                    <Wallet className="h-6 w-6 text-primary" />
+                    <span className="font-bold text-lg hidden sm:inline">Catat Cuanmu</span>
+                    <span className="font-bold text-lg sm:hidden">CC</span>
                 </Link>
 
                 {/* Desktop Navigation Links - only show when logged in */}
@@ -54,7 +54,7 @@ export function Navbar() {
                                         : "text-muted-foreground hover:bg-secondary/50 hover:text-foreground"
                                 )}
                             >
-                                <span>{item.icon}</span>
+                                {item.icon}
                                 <span>{item.label}</span>
                             </Link>
                         ))}

@@ -12,8 +12,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Trading Journal V2",
-  description: "Professional trading journal for crypto futures and spot portfolio",
+  title: "Catat Cuanmu - Professional Trading Journal",
+  description: "Track your crypto futures and spot portfolio with professional analytics",
 };
 
 export default function RootLayout({

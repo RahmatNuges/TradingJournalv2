@@ -9,6 +9,8 @@ import { TransactionDialog } from "@/components/spot/transaction-dialog";
 import { formatPercent } from "@/lib/calculations";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getSpotHoldingsSummary } from "@/lib/data-service";
+import { Wallet, CircleDollarSign, TrendingUp, Percent } from "lucide-react";
+import { getCurrentPrices } from "@/lib/price-service";
 
 interface HoldingSummary {
     symbol: string;
@@ -30,18 +32,25 @@ export default function SpotPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [holdings, setHoldings] = useState<HoldingSummary[]>([]);
+    const [prices, setPrices] = useState<Record<string, number>>({});
 
-    // Calculate totals (using mock current prices for now)
-    // In real app, you'd fetch current prices from an API
-    const mockPrices: Record<string, number> = {
-        BTC: 100500,
-        ETH: 3850,
-        SOL: 220,
-        // Add more as needed
-    };
+    const fetchData = useCallback(async () => {
+        setLoading(true);
+        const data = await getSpotHoldingsSummary();
+        setHoldings(data);
+
+        // Fetch real prices for holdings
+        if (data.length > 0) {
+            const symbols = data.map(h => h.symbol);
+            const currentPrices = await getCurrentPrices(symbols);
+            setPrices(currentPrices);
+        }
+
+        setLoading(false);
+    }, []);
 
     const holdingsWithValues = holdings.map(h => {
-        const currentPrice = mockPrices[h.symbol] || h.avgBuyPrice;
+        const currentPrice = prices[h.symbol] || h.avgBuyPrice; // Fallback to avgBuyPrice if fetching fails yet
         const currentValue = h.totalQuantity * currentPrice;
         const pnl = currentValue - h.totalCost;
         const pnlPercent = h.totalCost > 0 ? (pnl / h.totalCost) * 100 : 0;
@@ -65,15 +74,16 @@ export default function SpotPage() {
         allocation: totalValue > 0 ? (h.currentValue / totalValue) * 100 : 0,
     }));
 
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        const data = await getSpotHoldingsSummary();
-        setHoldings(data);
-        setLoading(false);
-    }, []);
+
 
     useEffect(() => {
         fetchData();
+        // Set up polling for real-time updates every 30 seconds
+        const interval = setInterval(() => {
+            fetchData();
+        }, 30000);
+
+        return () => clearInterval(interval);
     }, [fetchData]);
 
     const handleTransactionSaved = () => {
@@ -96,32 +106,44 @@ export default function SpotPage() {
             {/* Summary Cards */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
                 <Card>
-                    <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">Total Value</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Total Value</p>
+                        <Wallet className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className="text-2xl font-bold font-mono">
                             {loading ? "..." : formatCurrency(totalValue)}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">Total Cost</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Total Cost</p>
+                        <CircleDollarSign className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className="text-2xl font-bold font-mono text-muted-foreground">
                             {loading ? "..." : formatCurrency(totalCost)}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">Total P&L</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Total P&L</p>
+                        <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className={`text-2xl font-bold font-mono ${totalPnL >= 0 ? 'text-profit' : 'text-loss'}`}>
                             {loading ? "..." : `${totalPnL >= 0 ? '+' : ''}${formatCurrency(totalPnL)}`}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4">
-                        <p className="text-sm text-muted-foreground">P&L %</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">P&L %</p>
+                        <Percent className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         {!loading && (
                             <Badge
                                 variant={totalPnLPercent >= 0 ? "default" : "destructive"}

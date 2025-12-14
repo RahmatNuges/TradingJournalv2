@@ -12,6 +12,7 @@ import { formatPercent } from "@/lib/calculations";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getFuturesTrades, getFuturesStats, getCurrentBalance } from "@/lib/data-service";
 import type { FuturesTrade } from "@/types";
+import { Target, Scale, TrendingUp, BarChart2, ArrowUpRight, Wallet } from "lucide-react";
 
 export default function FuturesPage() {
     const { formatCurrency } = useFormatCurrency();
@@ -107,48 +108,64 @@ export default function FuturesPage() {
             {/* Stats Grid */}
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
                 <Card>
-                    <CardContent className="pt-4 text-center">
-                        <p className="text-xs text-muted-foreground uppercase">Win Rate</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Win Rate</p>
+                        <Target className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className="text-xl font-bold font-mono text-profit">
                             {stats.winRate.toFixed(1)}%
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4 text-center">
-                        <p className="text-xs text-muted-foreground uppercase">Avg RRR</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Avg RRR</p>
+                        <Scale className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className="text-xl font-bold font-mono">
                             1:{stats.avgRRR.toFixed(1)}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4 text-center">
-                        <p className="text-xs text-muted-foreground uppercase">Profit Factor</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Profit Factor</p>
+                        <TrendingUp className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className={`text-xl font-bold font-mono ${stats.profitFactor >= 1 ? "text-profit" : "text-loss"}`}>
                             {stats.profitFactor.toFixed(2)}
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4 text-center">
-                        <p className="text-xs text-muted-foreground uppercase">Total Trades</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Total Trades</p>
+                        <BarChart2 className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className="text-xl font-bold font-mono">{stats.totalTrades}</p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4 text-center">
-                        <p className="text-xs text-muted-foreground uppercase">W/L/BE</p>
-                        <p className="text-xl font-bold font-mono">
-                            <span className="text-profit">{stats.wins}</span>/
-                            <span className="text-loss">{stats.losses}</span>/
-                            <span className="text-muted-foreground">{stats.breakevens}</span>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">W / L / BE</p>
+                        <ArrowUpRight className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                        <p className="text-xl font-bold font-mono text-sm">
+                            <span className="text-profit">{stats.wins}</span> / <span className="text-loss">{stats.losses}</span> / <span className="text-muted-foreground">{stats.breakevens}</span>
                         </p>
                     </CardContent>
                 </Card>
                 <Card>
-                    <CardContent className="pt-4 text-center">
-                        <p className="text-xs text-muted-foreground uppercase">Net P&L</p>
+                    <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
+                        <p className="text-xs text-muted-foreground uppercase font-medium">Net P&L</p>
+                        <Wallet className="h-3 w-3 text-muted-foreground" />
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
                         <p className={`text-xl font-bold font-mono ${stats.totalPnL >= 0 ? "text-profit" : "text-loss"}`}>
                             {stats.totalPnL >= 0 ? "+" : ""}{formatCurrency(stats.totalPnL)}
                         </p>

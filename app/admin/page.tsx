@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ShoppingCart, Package, Ticket, Users, TrendingUp, Plus, Pencil, Trash2 } from "lucide-react";
 import { ProductDialog } from "@/components/admin/product-dialog";
 import { CouponDialog } from "@/components/admin/coupon-dialog";
+import { SubscriptionDialog } from "@/components/admin/subscription-dialog";
 
 // Types
 interface Order {
@@ -46,6 +47,16 @@ interface Coupon {
     is_active: boolean;
 }
 
+interface Subscription {
+    id: string;
+    user_id: string;
+    user_email?: string;
+    plan_name: string;
+    starts_at: string;
+    expires_at: string;
+    is_active: boolean;
+}
+
 interface Stats {
     totalOrders: number;
     paidOrders: number;
@@ -64,6 +75,7 @@ export default function AdminPage() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [products, setProducts] = useState<Product[]>([]);
     const [coupons, setCoupons] = useState<Coupon[]>([]);
+    const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
     const [stats, setStats] = useState<Stats>({
         totalOrders: 0,
         paidOrders: 0,
@@ -74,8 +86,10 @@ export default function AdminPage() {
     // Dialog states
     const [productDialogOpen, setProductDialogOpen] = useState(false);
     const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+    const [subscriptionDialogOpen, setSubscriptionDialogOpen] = useState(false);
     const [editingProduct, setEditingProduct] = useState<Product | null>(null);
     const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
+    const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
 
     // Check admin status
     useEffect(() => {
@@ -127,6 +141,27 @@ export default function AdminPage() {
                 .order("created_at", { ascending: false });
 
             if (couponsData) setCoupons(couponsData);
+
+            // Load subscriptions with user emails from orders
+            const { data: subsData } = await supabase
+                .from("subscriptions")
+                .select("*")
+                .order("expires_at", { ascending: false });
+
+            if (subsData) {
+                // Enrich with user emails from orders
+                const enrichedSubs = await Promise.all(subsData.map(async (sub) => {
+                    if (!supabase) return { ...sub, user_email: "Unknown" };
+                    const { data: orderData } = await supabase
+                        .from("orders")
+                        .select("user_email")
+                        .eq("user_id", sub.user_id)
+                        .limit(1)
+                        .single();
+                    return { ...sub, user_email: orderData?.user_email || "Unknown" };
+                }));
+                setSubscriptions(enrichedSubs);
+            }
 
             // Calculate stats
             const paidOrders = ordersData?.filter(o => o.status === "PAID") || [];
@@ -217,6 +252,22 @@ export default function AdminPage() {
         loadData();
     };
 
+    const handleEditSubscription = (subscription: Subscription) => {
+        setEditingSubscription(subscription);
+        setSubscriptionDialogOpen(true);
+    };
+
+    const handleAddSubscription = () => {
+        setEditingSubscription(null);
+        setSubscriptionDialogOpen(true);
+    };
+
+    const handleDeleteSubscription = async (id: string) => {
+        if (!supabase || !confirm("Yakin ingin menghapus subscription ini?")) return;
+        await supabase.from("subscriptions").delete().eq("id", id);
+        loadData();
+    };
+
     if (authLoading || loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
@@ -287,6 +338,9 @@ export default function AdminPage() {
                     </TabsTrigger>
                     <TabsTrigger value="coupons" className="gap-2">
                         <Ticket className="h-4 w-4" /> Coupons
+                    </TabsTrigger>
+                    <TabsTrigger value="subscribers" className="gap-2">
+                        <Users className="h-4 w-4" /> Subscribers
                     </TabsTrigger>
                 </TabsList>
 
@@ -452,6 +506,77 @@ export default function AdminPage() {
                         </CardContent>
                     </Card>
                 </TabsContent>
+
+                {/* Subscribers Tab */}
+                <TabsContent value="subscribers">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <CardTitle>Daftar Subscriber</CardTitle>
+                            <Button size="sm" onClick={handleAddSubscription}>
+                                <Plus className="h-4 w-4 mr-1" /> Tambah Subscriber
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm">
+                                    <thead>
+                                        <tr className="border-b border-border">
+                                            <th className="text-left py-3 px-2 font-medium">Email</th>
+                                            <th className="text-left py-3 px-2 font-medium">Paket</th>
+                                            <th className="text-left py-3 px-2 font-medium">Mulai</th>
+                                            <th className="text-left py-3 px-2 font-medium">Berakhir</th>
+                                            <th className="text-center py-3 px-2 font-medium">Status</th>
+                                            <th className="text-center py-3 px-2 font-medium">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {subscriptions.map((sub) => {
+                                            const isExpired = new Date(sub.expires_at) < new Date();
+                                            return (
+                                                <tr key={sub.id} className="border-b border-border/50 hover:bg-secondary/30">
+                                                    <td className="py-3 px-2">{sub.user_email}</td>
+                                                    <td className="py-3 px-2">{sub.plan_name}</td>
+                                                    <td className="py-3 px-2 text-muted-foreground">
+                                                        {formatDate(sub.starts_at)}
+                                                    </td>
+                                                    <td className="py-3 px-2 text-muted-foreground">
+                                                        {formatDate(sub.expires_at)}
+                                                    </td>
+                                                    <td className="py-3 px-2 text-center">
+                                                        {sub.is_active && !isExpired ? (
+                                                            <Badge className="bg-green-500/10 text-green-500">Aktif</Badge>
+                                                        ) : isExpired ? (
+                                                            <Badge className="bg-red-500/10 text-red-500">Expired</Badge>
+                                                        ) : (
+                                                            <Badge variant="outline">Nonaktif</Badge>
+                                                        )}
+                                                    </td>
+                                                    <td className="py-3 px-2 text-center">
+                                                        <div className="flex gap-1 justify-center">
+                                                            <Button variant="ghost" size="icon" onClick={() => handleEditSubscription(sub)}>
+                                                                <Pencil className="h-4 w-4" />
+                                                            </Button>
+                                                            <Button variant="ghost" size="icon" onClick={() => handleDeleteSubscription(sub.id)} className="text-red-500 hover:text-red-600">
+                                                                <Trash2 className="h-4 w-4" />
+                                                            </Button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                        {subscriptions.length === 0 && (
+                                            <tr>
+                                                <td colSpan={6} className="py-8 text-center text-muted-foreground">
+                                                    Belum ada subscriber
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </TabsContent>
             </Tabs>
 
             {/* Dialogs */}
@@ -465,6 +590,12 @@ export default function AdminPage() {
                 open={couponDialogOpen}
                 onOpenChange={setCouponDialogOpen}
                 coupon={editingCoupon}
+                onSave={loadData}
+            />
+            <SubscriptionDialog
+                open={subscriptionDialogOpen}
+                onOpenChange={setSubscriptionDialogOpen}
+                subscription={editingSubscription}
                 onSave={loadData}
             />
         </div>

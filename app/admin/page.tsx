@@ -8,7 +8,9 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Package, Ticket, Users, TrendingUp } from "lucide-react";
+import { ShoppingCart, Package, Ticket, Users, TrendingUp, Plus, Pencil, Trash2 } from "lucide-react";
+import { ProductDialog } from "@/components/admin/product-dialog";
+import { CouponDialog } from "@/components/admin/coupon-dialog";
 
 // Types
 interface Order {
@@ -68,6 +70,12 @@ export default function AdminPage() {
         totalRevenue: 0,
         activeSubscriptions: 0,
     });
+
+    // Dialog states
+    const [productDialogOpen, setProductDialogOpen] = useState(false);
+    const [couponDialogOpen, setCouponDialogOpen] = useState(false);
+    const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+    const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
 
     // Check admin status
     useEffect(() => {
@@ -174,6 +182,39 @@ export default function AdminPage() {
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
+    };
+
+    // CRUD handlers
+    const handleEditProduct = (product: Product) => {
+        setEditingProduct(product);
+        setProductDialogOpen(true);
+    };
+
+    const handleAddProduct = () => {
+        setEditingProduct(null);
+        setProductDialogOpen(true);
+    };
+
+    const handleDeleteProduct = async (id: string) => {
+        if (!supabase || !confirm("Yakin ingin menghapus produk ini?")) return;
+        await supabase.from("products").delete().eq("id", id);
+        loadData();
+    };
+
+    const handleEditCoupon = (coupon: Coupon) => {
+        setEditingCoupon(coupon);
+        setCouponDialogOpen(true);
+    };
+
+    const handleAddCoupon = () => {
+        setEditingCoupon(null);
+        setCouponDialogOpen(true);
+    };
+
+    const handleDeleteCoupon = async (id: string) => {
+        if (!supabase || !confirm("Yakin ingin menghapus kupon ini?")) return;
+        await supabase.from("coupons").delete().eq("id", id);
+        loadData();
     };
 
     if (authLoading || loading) {
@@ -302,6 +343,9 @@ export default function AdminPage() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Daftar Produk</CardTitle>
+                            <Button size="sm" onClick={handleAddProduct}>
+                                <Plus className="h-4 w-4 mr-1" /> Tambah Produk
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             <div className="grid gap-4">
@@ -321,7 +365,17 @@ export default function AdminPage() {
                                                 {product.description} • {product.duration_days} hari
                                             </div>
                                         </div>
-                                        <div className="text-xl font-bold">{formatRupiah(product.price_idr)}</div>
+                                        <div className="flex items-center gap-4">
+                                            <div className="text-xl font-bold">{formatRupiah(product.price_idr)}</div>
+                                            <div className="flex gap-1">
+                                                <Button variant="ghost" size="icon" onClick={() => handleEditProduct(product)}>
+                                                    <Pencil className="h-4 w-4" />
+                                                </Button>
+                                                <Button variant="ghost" size="icon" onClick={() => handleDeleteProduct(product.id)} className="text-red-500 hover:text-red-600">
+                                                    <Trash2 className="h-4 w-4" />
+                                                </Button>
+                                            </div>
+                                        </div>
                                     </div>
                                 ))}
                             </div>
@@ -334,6 +388,9 @@ export default function AdminPage() {
                     <Card>
                         <CardHeader className="flex flex-row items-center justify-between">
                             <CardTitle>Daftar Kupon</CardTitle>
+                            <Button size="sm" onClick={handleAddCoupon}>
+                                <Plus className="h-4 w-4 mr-1" /> Tambah Kupon
+                            </Button>
                         </CardHeader>
                         <CardContent>
                             <div className="overflow-x-auto">
@@ -345,6 +402,7 @@ export default function AdminPage() {
                                             <th className="text-center py-3 px-2 font-medium">Penggunaan</th>
                                             <th className="text-left py-3 px-2 font-medium">Berlaku Sampai</th>
                                             <th className="text-center py-3 px-2 font-medium">Status</th>
+                                            <th className="text-center py-3 px-2 font-medium">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -369,11 +427,21 @@ export default function AdminPage() {
                                                         <Badge variant="outline">Nonaktif</Badge>
                                                     )}
                                                 </td>
+                                                <td className="py-3 px-2 text-center">
+                                                    <div className="flex gap-1 justify-center">
+                                                        <Button variant="ghost" size="icon" onClick={() => handleEditCoupon(coupon)}>
+                                                            <Pencil className="h-4 w-4" />
+                                                        </Button>
+                                                        <Button variant="ghost" size="icon" onClick={() => handleDeleteCoupon(coupon.id)} className="text-red-500 hover:text-red-600">
+                                                            <Trash2 className="h-4 w-4" />
+                                                        </Button>
+                                                    </div>
+                                                </td>
                                             </tr>
                                         ))}
                                         {coupons.length === 0 && (
                                             <tr>
-                                                <td colSpan={5} className="py-8 text-center text-muted-foreground">
+                                                <td colSpan={6} className="py-8 text-center text-muted-foreground">
                                                     Belum ada kupon
                                                 </td>
                                             </tr>
@@ -385,6 +453,20 @@ export default function AdminPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            {/* Dialogs */}
+            <ProductDialog
+                open={productDialogOpen}
+                onOpenChange={setProductDialogOpen}
+                product={editingProduct}
+                onSave={loadData}
+            />
+            <CouponDialog
+                open={couponDialogOpen}
+                onOpenChange={setCouponDialogOpen}
+                coupon={editingCoupon}
+                onSave={loadData}
+            />
         </div>
     );
 }

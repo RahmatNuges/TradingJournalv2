@@ -9,6 +9,7 @@ import { CurrencySwitcher } from "@/components/currency-switcher";
 import { Menu, X, LogOut, User, LayoutDashboard, TrendingUp, Wallet, Shield } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { useSubscription } from "@/contexts/subscription-context";
 import { Logo } from "@/components/ui/logo";
 
 const navItems = [
@@ -21,10 +22,14 @@ export function Navbar() {
     const pathname = usePathname();
     const router = useRouter();
     const { user, loading, signOut } = useAuth();
+    const { isSubscribed, isAdmin } = useSubscription();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     // Hide full nav on login/register pages
     const isAuthPage = pathname === "/login" || pathname === "/register";
+
+    // Show nav links only if user is subscribed or admin
+    const showNavLinks = user && (isSubscribed || isAdmin);
 
     const handleSignOut = async () => {
         await signOut();
@@ -39,8 +44,8 @@ export function Navbar() {
                     <Logo />
                 </Link>
 
-                {/* Desktop Navigation Links - only show when logged in */}
-                {!isAuthPage && user && (
+                {/* Desktop Navigation Links - only show when subscribed */}
+                {!isAuthPage && showNavLinks && (
                     <div className="hidden md:flex items-center space-x-1">
                         {navItems.map((item) => (
                             <Link
@@ -104,7 +109,7 @@ export function Navbar() {
                     )}
 
                     {/* Mobile hamburger */}
-                    {!isAuthPage && user && (
+                    {!isAuthPage && showNavLinks && (
                         <Button
                             variant="ghost"
                             size="icon"
@@ -118,7 +123,7 @@ export function Navbar() {
             </div>
 
             {/* Mobile Menu */}
-            {mobileMenuOpen && user && (
+            {mobileMenuOpen && showNavLinks && (
                 <div className="md:hidden border-t border-border/40 bg-background">
                     <div className="container mx-auto px-4 py-2 space-y-1">
                         {navItems.map((item) => (

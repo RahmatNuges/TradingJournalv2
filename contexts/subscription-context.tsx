@@ -15,6 +15,7 @@ interface Subscription {
 interface SubscriptionContextType {
     subscription: Subscription | null;
     isSubscribed: boolean;
+    isAdmin: boolean;
     isLoading: boolean;
     daysRemaining: number;
     refresh: () => Promise<void>;
@@ -26,6 +27,9 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     const { user } = useAuth();
     const [subscription, setSubscription] = useState<Subscription | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+
+    // Check if user is admin
+    const isAdmin = user?.user_metadata?.is_admin === true;
 
     const fetchSubscription = async () => {
         if (!supabase || !user) {
@@ -58,7 +62,11 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
     }, [user]);
 
     // Check if subscription is active and not expired
+    // ADMIN ALWAYS HAS ACCESS
     const isSubscribed = (() => {
+        // Admin always has access
+        if (isAdmin) return true;
+
         if (!subscription) return false;
         if (!subscription.is_active) return false;
 
@@ -69,6 +77,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
 
     // Calculate days remaining
     const daysRemaining = (() => {
+        if (isAdmin) return 999; // Admin has unlimited
         if (!subscription) return 0;
         const expiresAt = new Date(subscription.expires_at);
         const now = new Date();
@@ -80,6 +89,7 @@ export function SubscriptionProvider({ children }: { children: ReactNode }) {
         <SubscriptionContext.Provider value={{
             subscription,
             isSubscribed,
+            isAdmin,
             isLoading,
             daysRemaining,
             refresh: fetchSubscription,

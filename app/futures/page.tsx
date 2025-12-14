@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,10 +12,15 @@ import { PositionCalculator } from "@/components/futures/position-calculator";
 import { formatPercent } from "@/lib/calculations";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getFuturesTrades, getFuturesStats, getCurrentBalance } from "@/lib/data-service";
+import { useAuth } from "@/contexts/auth-context";
+import { useSubscription } from "@/contexts/subscription-context";
 import type { FuturesTrade } from "@/types";
 import { Target, Scale, TrendingUp, BarChart2, ArrowUpRight, Wallet } from "lucide-react";
 
 export default function FuturesPage() {
+    const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
+    const { isSubscribed, isLoading: subLoading } = useSubscription();
     const { formatCurrency } = useFormatCurrency();
     const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
     const [isBalanceDialogOpen, setIsBalanceDialogOpen] = useState(false);
@@ -34,6 +40,15 @@ export default function FuturesPage() {
         totalPnL: 0,
     });
 
+    // Redirect non-subscribers to home
+    useEffect(() => {
+        if (!authLoading && !subLoading) {
+            if (!user || !isSubscribed) {
+                router.push("/");
+            }
+        }
+    }, [user, isSubscribed, authLoading, subLoading, router]);
+
     const fetchData = useCallback(async () => {
         setLoading(true);
         const [tradesData, statsData, balance] = await Promise.all([
@@ -48,9 +63,19 @@ export default function FuturesPage() {
     }, []);
 
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchData();
-    }, [fetchData]);
+        if (user && isSubscribed) {
+            fetchData();
+        }
+    }, [fetchData, user, isSubscribed]);
+
+    // Show loading while checking auth/subscription
+    if (authLoading || subLoading || !user || !isSubscribed) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     const handleTradeSaved = () => {
         fetchData();
@@ -104,10 +129,10 @@ export default function FuturesPage() {
                         </div>
                     </div>
                 </CardContent>
-            </Card>
+            </Card >
 
             {/* Stats Grid */}
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3">
+            < div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-3" >
                 <Card>
                     <CardHeader className="p-4 pb-2 flex flex-row items-center justify-between space-y-0">
                         <p className="text-xs text-muted-foreground uppercase font-medium">Win Rate</p>

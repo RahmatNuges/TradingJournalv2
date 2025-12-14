@@ -5,6 +5,7 @@ import { Navbar } from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/auth-context";
 import { CurrencyProvider } from "@/contexts/currency-context";
+import { SubscriptionProvider } from "@/contexts/subscription-context";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -46,10 +47,12 @@ export default function RootLayout({
         >
           <CurrencyProvider>
             <AuthProvider>
-              <Navbar />
-              <main className="container mx-auto px-4 py-6 max-w-7xl">
-                {children}
-              </main>
+              <SubscriptionProvider>
+                <Navbar />
+                <main className="container mx-auto px-4 py-6 max-w-7xl">
+                  {children}
+                </main>
+              </SubscriptionProvider>
             </AuthProvider>
           </CurrencyProvider>
         </ThemeProvider>

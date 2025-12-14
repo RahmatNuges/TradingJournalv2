@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -9,6 +10,8 @@ import { TransactionDialog } from "@/components/spot/transaction-dialog";
 import { formatPercent } from "@/lib/calculations";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
 import { getSpotHoldingsSummary } from "@/lib/data-service";
+import { useAuth } from "@/contexts/auth-context";
+import { useSubscription } from "@/contexts/subscription-context";
 import { Wallet, CircleDollarSign, TrendingUp, Percent } from "lucide-react";
 import { getCurrentPrices } from "@/lib/price-service";
 
@@ -28,11 +31,23 @@ interface HoldingSummary {
 }
 
 export default function SpotPage() {
+    const router = useRouter();
+    const { user, loading: authLoading } = useAuth();
+    const { isSubscribed, isLoading: subLoading } = useSubscription();
     const { formatCurrency } = useFormatCurrency();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [loading, setLoading] = useState(true);
     const [holdings, setHoldings] = useState<HoldingSummary[]>([]);
     const [prices, setPrices] = useState<Record<string, number>>({});
+
+    // Redirect non-subscribers to home
+    useEffect(() => {
+        if (!authLoading && !subLoading) {
+            if (!user || !isSubscribed) {
+                router.push("/");
+            }
+        }
+    }, [user, isSubscribed, authLoading, subLoading, router]);
 
     const fetchData = useCallback(async () => {
         setLoading(true);
@@ -74,18 +89,26 @@ export default function SpotPage() {
         allocation: totalValue > 0 ? (h.currentValue / totalValue) * 100 : 0,
     }));
 
-
-
     useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchData();
-        // Set up polling for real-time updates every 30 seconds
-        const interval = setInterval(() => {
+        if (user && isSubscribed) {
             fetchData();
-        }, 30000);
+            // Set up polling for real-time updates every 30 seconds
+            const interval = setInterval(() => {
+                fetchData();
+            }, 30000);
 
-        return () => clearInterval(interval);
-    }, [fetchData]);
+            return () => clearInterval(interval);
+        }
+    }, [fetchData, user, isSubscribed]);
+
+    // Show loading while checking auth/subscription
+    if (authLoading || subLoading || !user || !isSubscribed) {
+        return (
+            <div className="min-h-[60vh] flex items-center justify-center">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+            </div>
+        );
+    }
 
     const handleTransactionSaved = () => {
         fetchData();

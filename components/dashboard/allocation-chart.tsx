@@ -1,7 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { formatCurrency } from "@/lib/calculations";
+
 
 interface AllocationChartProps {
     data: Array<{ symbol: string; name: string; value: number }>;
@@ -21,9 +21,10 @@ const COLORS = ['#10b981', '#3b82f6', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'
 interface CustomTooltipProps {
     active?: boolean;
     payload?: Array<{ payload: ChartDataItem; color: string }>;
+    formatCurrency: (value: number) => string;
 }
 
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, formatCurrency }: CustomTooltipProps) {
     if (!active || !payload || payload.length === 0) return null;
 
     const data = payload[0].payload;
@@ -55,7 +56,10 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
     );
 }
 
+import { useFormatCurrency } from "@/hooks/use-format-currency";
+
 export function AllocationChart({ data }: AllocationChartProps) {
+    const { formatCurrency } = useFormatCurrency();
     if (data.length === 0) {
         return (
             <div className="h-[300px] flex items-center justify-center text-muted-foreground">
@@ -72,7 +76,7 @@ export function AllocationChart({ data }: AllocationChartProps) {
     }));
 
     return (
-        <div className="h-[300px]">
+        <div className="h-[300px] w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie
@@ -90,7 +94,7 @@ export function AllocationChart({ data }: AllocationChartProps) {
                             <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} stroke="none" />
                         ))}
                     </Pie>
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
                     <Legend
                         formatter={(value) => {
                             const item = chartData.find(d => d.symbol === value);

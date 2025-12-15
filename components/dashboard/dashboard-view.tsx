@@ -101,19 +101,24 @@ export function DashboardView() {
             {/* Total Portfolio Card + Distribution Chart - Side by Side */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Total Portfolio Card */}
-                <Card className="relative overflow-hidden border-zinc-800 bg-zinc-900/50 hover:bg-zinc-900/80 transition-colors shadow-lg">
-                    <div className="absolute inset-0 bg-gradient-to-br from-zinc-800/20 via-transparent to-transparent opacity-50" />
-                    <div className="absolute top-0 right-0 p-6 opacity-5">
-                        <GripHorizontal className="h-24 w-24" />
+                <Card className="relative overflow-hidden border-border shadow-lg bg-card text-card-foreground transition-all hover:shadow-xl">
+                    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-50" />
+                    <div className="absolute top-0 right-0 p-6 opacity-0">
+                        <GripHorizontal className="h-24 w-24 text-foreground" />
                     </div>
                     <CardContent className="pt-8 pb-8 relative z-10 h-full flex flex-col justify-center items-center text-center">
                         <p className="text-sm font-medium text-muted-foreground uppercase tracking-widest mb-3">
                             Total Net Worth
                         </p>
                         <div className="flex items-baseline justify-center gap-1 mb-6">
-                            <span className="text-muted-foreground/50 text-3xl font-bold">$</span>
-                            <span className="text-5xl md:text-7xl font-bold font-mono tracking-tighter text-foreground drop-shadow-sm">
-                                {loading ? "..." : (totalPortfolio).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            <span className="text-muted-foreground/50 text-2xl md:text-3xl font-bold">
+                                {data.futuresBalance + data.spotValue < 0 ? "-" : ""}
+                            </span>
+                            <span className="text-4xl sm:text-5xl md:text-7xl font-bold font-mono tracking-tighter text-foreground drop-shadow-sm">
+                                {loading ? "..." : formatCurrency(Math.abs(totalPortfolio)).replace(/[^0-9.,]/g, '')}
+                            </span>
+                            <span className="text-muted-foreground/50 text-sm md:text-xl font-bold ml-1">
+                                {formatCurrency(0).replace(/[0-9.,]/g, '')}
                             </span>
                         </div>
 
@@ -122,8 +127,8 @@ export function DashboardView() {
                                 <Badge
                                     variant="outline"
                                     className={`text-sm px-3 py-1 font-medium border-0 ${totalPnL >= 0
-                                            ? "bg-emerald-500/10 text-emerald-500"
-                                            : "bg-red-500/10 text-red-500"
+                                        ? "bg-emerald-500/10 text-emerald-500"
+                                        : "bg-red-500/10 text-red-500"
                                         }`}
                                 >
                                     {totalPnL >= 0 ? "+" : ""}{formatCurrency(totalPnL)}
@@ -132,8 +137,8 @@ export function DashboardView() {
                                 <Badge
                                     variant="outline"
                                     className={`text-sm px-3 py-1 font-medium border-0 ${totalPnL >= 0
-                                            ? "bg-emerald-500/10 text-emerald-500"
-                                            : "bg-red-500/10 text-red-500"
+                                        ? "bg-emerald-500/10 text-emerald-500"
+                                        : "bg-red-500/10 text-red-500"
                                         }`}
                                 >
                                     {totalPnL >= 0 ? "+" : ""}{((totalPnL / (totalPortfolio - totalPnL)) * 100).toFixed(2)}%
@@ -144,7 +149,7 @@ export function DashboardView() {
                 </Card>
 
                 {/* Portfolio Distribution - Next to Portfolio Value */}
-                <Card className="overflow-hidden bg-card hover:bg-card/80 transition-colors border-border/50 shadow-sm">
+                <Card className="overflow-hidden bg-card hover:bg-accent/5 transition-colors border-border/50 shadow-sm">
                     <CardHeader className="pb-2 border-b">
                         <CardTitle className="flex items-center gap-2 text-base font-medium text-muted-foreground">
                             <div className="p-1.5 rounded-md bg-secondary">
@@ -153,7 +158,7 @@ export function DashboardView() {
                             Portfolio Distribution
                         </CardTitle>
                     </CardHeader>
-                    <CardContent className="pt-4 flex items-center justify-center h-[200px]">
+                    <CardContent className="pt-6">
                         <PortfolioDistribution
                             spotValue={data.spotValue}
                             futuresValue={data.futuresBalance}

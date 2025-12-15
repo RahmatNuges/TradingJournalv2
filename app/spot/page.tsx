@@ -128,7 +128,7 @@ export default function SpotPage() {
             </div>
 
             {/* Summary Cards */}
-            <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <Card className="relative overflow-hidden border-emerald-500/20 bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors">
                     <div className="absolute top-0 right-0 p-3 opacity-10">
                         <Wallet className="h-24 w-24 text-emerald-500" />
@@ -137,7 +137,7 @@ export default function SpotPage() {
                         <p className="text-sm font-medium text-emerald-500">Total Asset Value</p>
                     </CardHeader>
                     <CardContent className="p-6 pt-0 relative z-10">
-                        <p className="text-3xl font-bold font-mono tracking-tight">
+                        <p className="text-2xl sm:text-3xl font-bold font-mono tracking-tight truncate" title={formatCurrency(totalValue)}>
                             {loading ? "..." : formatCurrency(totalValue)}
                         </p>
                         <p className="text-xs text-muted-foreground mt-1">Estimasi nilai aset saat ini</p>
@@ -152,7 +152,7 @@ export default function SpotPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-6 pt-0">
-                        <p className="text-2xl font-bold font-mono text-muted-foreground/80">
+                        <p className="text-xl sm:text-2xl font-bold font-mono text-muted-foreground/80 truncate" title={formatCurrency(totalCost)}>
                             {loading ? "..." : formatCurrency(totalCost)}
                         </p>
                     </CardContent>
@@ -166,7 +166,7 @@ export default function SpotPage() {
                         </div>
                     </CardHeader>
                     <CardContent className="p-6 pt-0">
-                        <p className={`text-2xl font-bold font-mono ${totalPnL >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                        <p className={`text-xl sm:text-2xl font-bold font-mono ${totalPnL >= 0 ? 'text-emerald-500' : 'text-red-500'} truncate`} title={formatCurrency(totalPnL)}>
                             {loading ? "..." : `${totalPnL >= 0 ? '+' : ''}${formatCurrency(totalPnL)}`}
                         </p>
                     </CardContent>

@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { formatCurrency, formatPercent } from "@/lib/calculations";
+import { formatPercent } from "@/lib/calculations";
 import { deleteFuturesTrade } from "@/lib/data-service";
 import type { FuturesTrade } from "@/types";
 import { useState } from "react";
@@ -21,7 +21,10 @@ interface TradeTableProps {
     onRefresh?: () => void;
 }
 
+import { useFormatCurrency } from "@/hooks/use-format-currency";
+
 export function TradeTable({ trades, onRefresh }: TradeTableProps) {
+    const { formatCurrency } = useFormatCurrency();
     const [selectedTrade, setSelectedTrade] = useState<FuturesTrade | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -94,13 +97,13 @@ export function TradeTable({ trades, onRefresh }: TradeTableProps) {
                                 </Badge>
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                {trade.entry_price.toLocaleString()}
+                                {formatCurrency(trade.entry_price)}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                {trade.exit_price.toLocaleString()}
+                                {formatCurrency(trade.exit_price)}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                ${trade.position_size}
+                                {formatCurrency(trade.position_size)}
                             </TableCell>
                             <TableCell
                                 className={`text-right font-mono font-bold ${trade.net_pnl >= 0 ? "text-profit" : "text-loss"

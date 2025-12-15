@@ -1,7 +1,7 @@
 "use client";
 
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from "recharts";
-import { formatCurrency } from "@/lib/calculations";
+
 
 interface PortfolioDistributionProps {
     spotValue: number;
@@ -22,9 +22,10 @@ const COLORS = ['#10b981', '#3b82f6']; // Emerald (Spot) & Blue (Futures)
 interface CustomTooltipProps {
     active?: boolean;
     payload?: Array<{ payload: DataItem; color: string }>;
+    formatCurrency: (value: number) => string;
 }
 
-function CustomTooltip({ active, payload }: CustomTooltipProps) {
+function CustomTooltip({ active, payload, formatCurrency }: CustomTooltipProps) {
     if (!active || !payload || payload.length === 0) return null;
 
     const data = payload[0].payload;
@@ -56,7 +57,10 @@ function CustomTooltip({ active, payload }: CustomTooltipProps) {
     );
 }
 
+import { useFormatCurrency } from "@/hooks/use-format-currency";
+
 export function PortfolioDistribution({ spotValue, futuresValue, compact = false }: PortfolioDistributionProps) {
+    const { formatCurrency } = useFormatCurrency();
     const totalValue = spotValue + futuresValue;
     const data: DataItem[] = [
         { name: 'Spot', value: spotValue, percentage: totalValue > 0 ? (spotValue / totalValue) * 100 : 0 },
@@ -76,7 +80,7 @@ export function PortfolioDistribution({ spotValue, futuresValue, compact = false
     }
 
     return (
-        <div style={{ height: `${height}px` }}>
+        <div style={{ height: `${height}px` }} className="w-full">
             <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                     <Pie
@@ -93,7 +97,7 @@ export function PortfolioDistribution({ spotValue, futuresValue, compact = false
                             <Cell key={`cell-${index}`} fill={COLORS[index]} stroke="none" />
                         ))}
                     </Pie>
-                    <Tooltip content={<CustomTooltip />} />
+                    <Tooltip content={<CustomTooltip formatCurrency={formatCurrency} />} />
                     <Legend
                         formatter={(value) => {
                             const item = data.find(d => d.name === value);

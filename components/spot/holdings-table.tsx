@@ -17,7 +17,7 @@ import {
     DialogHeader,
     DialogTitle,
 } from "@/components/ui/dialog";
-import { formatCurrency, formatPercent } from "@/lib/calculations";
+import { formatPercent } from "@/lib/calculations";
 import { deleteSpotTransaction, deleteSpotHolding } from "@/lib/data-service";
 
 interface HoldingWithValues {
@@ -45,7 +45,10 @@ interface HoldingsTableProps {
     onRefresh?: () => void;
 }
 
+import { useFormatCurrency } from "@/hooks/use-format-currency";
+
 export function HoldingsTable({ holdings, onRefresh }: HoldingsTableProps) {
+    const { formatCurrency } = useFormatCurrency();
     const [selectedHolding, setSelectedHolding] = useState<HoldingWithValues | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
 
@@ -109,10 +112,10 @@ export function HoldingsTable({ holdings, onRefresh }: HoldingsTableProps) {
                                 {holding.totalQuantity.toFixed(8).replace(/\.?0+$/, '')}
                             </TableCell>
                             <TableCell className="text-right font-mono text-muted-foreground">
-                                ${holding.avgBuyPrice.toLocaleString()}
+                                {formatCurrency(holding.avgBuyPrice)}
                             </TableCell>
                             <TableCell className="text-right font-mono">
-                                ${holding.currentPrice.toLocaleString()}
+                                {formatCurrency(holding.currentPrice)}
                             </TableCell>
                             <TableCell className="text-right font-mono font-bold">
                                 {formatCurrency(holding.currentValue)}
@@ -160,7 +163,7 @@ export function HoldingsTable({ holdings, onRefresh }: HoldingsTableProps) {
                             </div>
                             <div>
                                 <p className="text-xs text-muted-foreground">Avg Buy Price</p>
-                                <p className="font-mono font-bold">${selectedHolding?.avgBuyPrice.toLocaleString()}</p>
+                                <p className="font-mono font-bold">{formatCurrency(selectedHolding?.avgBuyPrice || 0)}</p>
                             </div>
                         </div>
 
@@ -187,7 +190,7 @@ export function HoldingsTable({ holdings, onRefresh }: HoldingsTableProps) {
                                             </Badge>
                                         </TableCell>
                                         <TableCell className="text-right font-mono">{tx.quantity}</TableCell>
-                                        <TableCell className="text-right font-mono">${tx.price_usd.toLocaleString()}</TableCell>
+                                        <TableCell className="text-right font-mono">{formatCurrency(tx.price_usd)}</TableCell>
                                         <TableCell>
                                             <Button
                                                 variant="ghost"

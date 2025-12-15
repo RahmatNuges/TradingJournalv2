@@ -124,7 +124,7 @@ export function LandingHero() {
                             <div className="absolute inset-0 bg-gradient-to-r from-emerald-500/20 to-primary/20 rounded-2xl blur-3xl"></div>
                             <div className="relative">
                                 <img
-                                    src="/dashboard-mockup.png"
+                                    src="/dashboard-mockup.webp"
                                     alt="Dashboard Preview"
                                     className="rounded-xl shadow-2xl border border-border/50 w-full"
                                 />

@@ -7,6 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/auth-context";
 import { CurrencyProvider } from "@/contexts/currency-context";
 import { SubscriptionProvider } from "@/contexts/subscription-context";
+import { QueryProvider } from "@/components/providers/query-provider";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -46,17 +47,19 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          <CurrencyProvider>
-            <AuthProvider>
-              <SubscriptionProvider>
-                <Navbar />
-                <main className="container mx-auto px-4 py-6 max-w-7xl flex-1">
-                  {children}
-                </main>
-                <Footer />
-              </SubscriptionProvider>
-            </AuthProvider>
-          </CurrencyProvider>
+          <QueryProvider>
+            <CurrencyProvider>
+              <AuthProvider>
+                <SubscriptionProvider>
+                  <Navbar />
+                  <main className="container mx-auto px-4 py-6 max-w-7xl flex-1">
+                    {children}
+                  </main>
+                  <Footer />
+                </SubscriptionProvider>
+              </AuthProvider>
+            </CurrencyProvider>
+          </QueryProvider>
         </ThemeProvider>
       </body>
     </html>

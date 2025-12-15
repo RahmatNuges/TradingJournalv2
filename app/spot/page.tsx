@@ -1,19 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { HoldingsTable } from "@/components/spot/holdings-table";
 import { TransactionDialog } from "@/components/spot/transaction-dialog";
 import { formatPercent } from "@/lib/calculations";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
-import { getSpotHoldingsSummary } from "@/lib/data-service";
 import { useAuth } from "@/contexts/auth-context";
 import { useSubscription } from "@/contexts/subscription-context";
 import { Wallet, CircleDollarSign, TrendingUp, Percent } from "lucide-react";
-import { getCurrentPrices } from "@/lib/price-service";
+import { useSpotData } from "@/hooks/use-spot-data";
 
 interface HoldingSummary {
     symbol: string;
@@ -36,9 +34,27 @@ export default function SpotPage() {
     const { isSubscribed, isLoading: subLoading } = useSubscription();
     const { formatCurrency } = useFormatCurrency();
     const [isDialogOpen, setIsDialogOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
-    const [holdings, setHoldings] = useState<HoldingSummary[]>([]);
-    const [prices, setPrices] = useState<Record<string, number>>({});
+
+    // Use React Query hook
+    const { data, isLoading: dataLoading, refetch } = useSpotData();
+    const loading = dataLoading || authLoading || subLoading;
+
+    // Default empty data if loading
+    const safeData = data || {
+        holdings: [],
+        totalValue: 0,
+        totalCost: 0,
+        totalPnL: 0,
+        totalPnLPercent: 0
+    };
+
+    const {
+        holdings: holdingsWithAllocation,
+        totalValue,
+        totalCost,
+        totalPnL,
+        totalPnLPercent
+    } = safeData;
 
     // Redirect non-subscribers to home
     useEffect(() => {
@@ -48,58 +64,6 @@ export default function SpotPage() {
             }
         }
     }, [user, isSubscribed, authLoading, subLoading, router]);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        const data = await getSpotHoldingsSummary();
-        setHoldings(data);
-
-        // Fetch real prices for holdings
-        if (data.length > 0) {
-            const symbols = data.map(h => h.symbol);
-            const currentPrices = await getCurrentPrices(symbols);
-            setPrices(currentPrices);
-        }
-
-        setLoading(false);
-    }, []);
-
-    const holdingsWithValues = holdings.map(h => {
-        const currentPrice = prices[h.symbol] || h.avgBuyPrice; // Fallback to avgBuyPrice if fetching fails yet
-        const currentValue = h.totalQuantity * currentPrice;
-        const pnl = currentValue - h.totalCost;
-        const pnlPercent = h.totalCost > 0 ? (pnl / h.totalCost) * 100 : 0;
-        return {
-            ...h,
-            currentPrice,
-            currentValue,
-            pnl,
-            pnlPercent,
-        };
-    });
-
-    const totalValue = holdingsWithValues.reduce((sum, h) => sum + h.currentValue, 0);
-    const totalCost = holdingsWithValues.reduce((sum, h) => sum + h.totalCost, 0);
-    const totalPnL = totalValue - totalCost;
-    const totalPnLPercent = totalCost > 0 ? (totalPnL / totalCost) * 100 : 0;
-
-    // Add allocation percentage
-    const holdingsWithAllocation = holdingsWithValues.map(h => ({
-        ...h,
-        allocation: totalValue > 0 ? (h.currentValue / totalValue) * 100 : 0,
-    }));
-
-    useEffect(() => {
-        if (user && isSubscribed) {
-            fetchData();
-            // Set up polling for real-time updates every 30 seconds
-            const interval = setInterval(() => {
-                fetchData();
-            }, 30000);
-
-            return () => clearInterval(interval);
-        }
-    }, [fetchData, user, isSubscribed]);
 
     // Show loading while checking auth/subscription
     if (authLoading || subLoading || !user || !isSubscribed) {
@@ -111,7 +75,7 @@ export default function SpotPage() {
     }
 
     const handleTransactionSaved = () => {
-        fetchData();
+        refetch();
     };
 
     return (
@@ -193,10 +157,10 @@ export default function SpotPage() {
             {/* Holdings Table */}
             <Card>
                 <CardHeader>
-                    <CardTitle>Holdings ({holdings.length})</CardTitle>
+                    <CardTitle>Holdings ({holdingsWithAllocation.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <HoldingsTable holdings={holdingsWithAllocation} onRefresh={fetchData} />
+                    <HoldingsTable holdings={holdingsWithAllocation} onRefresh={refetch} />
                 </CardContent>
             </Card>
 
@@ -213,7 +177,7 @@ export default function SpotPage() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent>
-                        {holdings.length === 0 ? (
+                        {holdingsWithAllocation.length === 0 ? (
                             <div className="flex flex-col items-center justify-center py-12 text-center text-muted-foreground">
                                 <CircleDollarSign className="h-12 w-12 mb-3 text-muted-foreground/20" />
                                 <p>Belum ada aset</p>
@@ -225,20 +189,20 @@ export default function SpotPage() {
                                         <div className="flex justify-between text-sm mb-1.5">
                                             <span className="font-medium group-hover:text-emerald-500 transition-colors">{holding.symbol}</span>
                                             <span className="text-muted-foreground font-mono">
-                                                {holding.allocation.toFixed(1)}%
+                                                {holding.allocation?.toFixed(1) || '0.0'}%
                                             </span>
                                         </div>
                                         <div className="h-2.5 bg-secondary/50 rounded-full overflow-hidden">
                                             <div
                                                 className="h-full bg-gradient-to-r from-emerald-500 to-emerald-400 rounded-full transition-all duration-500 ease-out group-hover:shadow-[0_0_10px_rgba(16,185,129,0.3)]"
-                                                style={{ width: `${Math.min(holding.allocation, 100)}%` }}
+                                                style={{ width: `${Math.min(holding.allocation || 0, 100)}%` }}
                                             />
                                         </div>
                                     </div>
                                 ))}
-                                {holdings.length > 5 && (
+                                {holdingsWithAllocation.length > 5 && (
                                     <p className="text-xs text-center text-muted-foreground pt-2">
-                                        +{holdings.length - 5} aset lainnya
+                                        +{holdingsWithAllocation.length - 5} aset lainnya
                                     </p>
                                 )}
                             </div>
@@ -259,25 +223,25 @@ export default function SpotPage() {
                     <CardContent className="grid grid-cols-2 gap-4">
                         <div className="p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors border border-transparent hover:border-border/50">
                             <p className="text-sm text-muted-foreground mb-1">Total Aset</p>
-                            <p className="text-2xl font-bold">{holdings.length}</p>
+                            <p className="text-2xl font-bold">{holdingsWithAllocation.length}</p>
                         </div>
                         <div className="p-4 rounded-xl bg-emerald-500/5 hover:bg-emerald-500/10 transition-colors border border-emerald-500/10">
                             <p className="text-sm text-muted-foreground mb-1">Aset Profit</p>
                             <p className="text-2xl font-bold text-emerald-500">
-                                {holdingsWithAllocation.filter(h => h.pnl > 0).length}
+                                {holdingsWithAllocation.filter(h => (h.pnl || 0) > 0).length}
                             </p>
                         </div>
                         <div className="p-4 rounded-xl bg-red-500/5 hover:bg-red-500/10 transition-colors border border-red-500/10">
                             <p className="text-sm text-muted-foreground mb-1">Aset Loss</p>
                             <p className="text-2xl font-bold text-red-500">
-                                {holdingsWithAllocation.filter(h => h.pnl < 0).length}
+                                {holdingsWithAllocation.filter(h => (h.pnl || 0) < 0).length}
                             </p>
                         </div>
                         <div className="p-4 rounded-xl bg-secondary/30 hover:bg-secondary/50 transition-colors border border-transparent hover:border-border/50">
                             <p className="text-sm text-muted-foreground mb-1">Avg Cost</p>
-                            <p className="text-xl font-bold font-mono truncate" title={formatCurrency(holdings.length > 0 ? totalCost / holdings.length : 0)}>
-                                {holdings.length > 0
-                                    ? formatCurrency(totalCost / holdings.length)
+                            <p className="text-xl font-bold font-mono truncate" title={formatCurrency(holdingsWithAllocation.length > 0 ? totalCost / holdingsWithAllocation.length : 0)}>
+                                {holdingsWithAllocation.length > 0
+                                    ? formatCurrency(totalCost / holdingsWithAllocation.length)
                                     : formatCurrency(0)
                                 }
                             </p>

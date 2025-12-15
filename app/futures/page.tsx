@@ -11,7 +11,7 @@ import { BalanceDialog } from "@/components/futures/balance-dialog";
 import { PositionCalculator } from "@/components/futures/position-calculator";
 import { formatPercent } from "@/lib/calculations";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
-import { getFuturesTrades, getFuturesStats, getCurrentBalance } from "@/lib/data-service";
+import { useFuturesData } from "@/hooks/use-futures-data";
 import { useAuth } from "@/contexts/auth-context";
 import { useSubscription } from "@/contexts/subscription-context";
 import type { FuturesTrade } from "@/types";
@@ -24,21 +24,28 @@ export default function FuturesPage() {
     const { formatCurrency } = useFormatCurrency();
     const [isTradeDialogOpen, setIsTradeDialogOpen] = useState(false);
     const [isBalanceDialogOpen, setIsBalanceDialogOpen] = useState(false);
-    const [loading, setLoading] = useState(true);
 
-    // Data from Supabase
-    const [trades, setTrades] = useState<FuturesTrade[]>([]);
-    const [currentBalance, setCurrentBalance] = useState(0);
-    const [stats, setStats] = useState({
-        totalTrades: 0,
-        wins: 0,
-        losses: 0,
-        breakevens: 0,
-        winRate: 0,
-        avgRRR: 0,
-        profitFactor: 0,
-        totalPnL: 0,
-    });
+    // Use React Query hook
+    const { data, isLoading: dataLoading, refetch } = useFuturesData();
+    const loading = dataLoading || authLoading || subLoading;
+
+    // Default empty data if loading
+    const safeData = data || {
+        trades: [],
+        balance: 0,
+        stats: {
+            totalTrades: 0,
+            wins: 0,
+            losses: 0,
+            breakevens: 0,
+            winRate: 0,
+            avgRRR: 0,
+            profitFactor: 0,
+            totalPnL: 0,
+        }
+    };
+
+    const { trades, balance: currentBalance, stats } = safeData;
 
     // Redirect non-subscribers to home
     useEffect(() => {
@@ -48,25 +55,6 @@ export default function FuturesPage() {
             }
         }
     }, [user, isSubscribed, authLoading, subLoading, router]);
-
-    const fetchData = useCallback(async () => {
-        setLoading(true);
-        const [tradesData, statsData, balance] = await Promise.all([
-            getFuturesTrades(),
-            getFuturesStats(),
-            getCurrentBalance(),
-        ]);
-        setTrades(tradesData);
-        setStats(statsData);
-        setCurrentBalance(balance);
-        setLoading(false);
-    }, []);
-
-    useEffect(() => {
-        if (user && isSubscribed) {
-            fetchData();
-        }
-    }, [fetchData, user, isSubscribed]);
 
     // Show loading while checking auth/subscription
     if (authLoading || subLoading || !user || !isSubscribed) {
@@ -78,11 +66,11 @@ export default function FuturesPage() {
     }
 
     const handleTradeSaved = () => {
-        fetchData();
+        refetch();
     };
 
     const handleBalanceSaved = () => {
-        fetchData();
+        refetch();
     };
 
     return (
@@ -208,7 +196,7 @@ export default function FuturesPage() {
                     <CardTitle>Riwayat Trade ({trades.length})</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <TradeTable trades={trades} onRefresh={fetchData} />
+                    <TradeTable trades={trades} onRefresh={refetch} />
                 </CardContent>
             </Card>
 

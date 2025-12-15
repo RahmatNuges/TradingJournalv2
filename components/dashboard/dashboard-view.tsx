@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { EquityChart } from "@/components/dashboard/equity-chart";
@@ -8,14 +7,15 @@ import { CalendarHeatmap } from "@/components/dashboard/calendar-heatmap";
 import { AllocationChart } from "@/components/dashboard/allocation-chart";
 import { PortfolioDistribution } from "@/components/dashboard/portfolio-distribution";
 import { useFormatCurrency } from "@/hooks/use-format-currency";
-import { getFuturesStats, getCurrentBalance, getSpotHoldingsSummary, getFuturesTrades } from "@/lib/data-service";
-import { getCurrentPrices } from "@/lib/price-service";
 import { TrendingUp, Wallet, Target, Scale, GripHorizontal } from "lucide-react";
+import { useDashboardData } from "@/hooks/use-dashboard-data";
 
 export function DashboardView() {
     const { formatCurrency } = useFormatCurrency();
-    const [loading, setLoading] = useState(true);
-    const [data, setData] = useState({
+    const { data, isLoading: loading } = useDashboardData();
+
+    // Default values if data is loading or undefined
+    const safeData = data || {
         futuresBalance: 0,
         futuresPnL: 0,
         spotValue: 0,
@@ -25,70 +25,12 @@ export function DashboardView() {
         avgRRR: 0,
         totalTrades: 0,
         profitFactor: 0,
-    });
-    const [calendarData, setCalendarData] = useState<Array<{ date: string; pnl: number }>>([]);
-    const [allocationData, setAllocationData] = useState<Array<{ symbol: string; name: string; value: number }>>([]);
+        calendarData: [],
+        allocationData: [],
+    };
 
-    const fetchData = useCallback(async () => {
-        const [stats, balance, holdings, trades] = await Promise.all([
-            getFuturesStats(),
-            getCurrentBalance(),
-            getSpotHoldingsSummary(),
-            getFuturesTrades(),
-        ]);
-
-        // Get unique symbols to fetch prices
-        const symbols = holdings.map(h => h.symbol);
-        const prices = await getCurrentPrices(symbols);
-
-        // Calculate spot values
-        let spotValue = 0;
-        let spotCost = 0;
-        const allocation: Array<{ symbol: string; name: string; value: number }> = [];
-
-        holdings.forEach(h => {
-            const currentPrice = prices[h.symbol] || h.avgBuyPrice; // Fallback to avg buy price if not found
-            const value = h.totalQuantity * currentPrice;
-            spotValue += value;
-            spotCost += h.totalCost;
-            allocation.push({
-                symbol: h.symbol,
-                name: h.name,
-                value: value,
-            });
-        });
-
-        // Calculate calendar data from trades (group by date)
-        const tradesByDate: Record<string, number> = {};
-        trades.forEach(t => {
-            const date = t.date.split('T')[0];
-            tradesByDate[date] = (tradesByDate[date] || 0) + t.net_pnl;
-        });
-        const calendar = Object.entries(tradesByDate).map(([date, pnl]) => ({ date, pnl }));
-
-        setData({
-            futuresBalance: balance,
-            futuresPnL: stats.totalPnL,
-            spotValue,
-            spotCost,
-            spotPnL: spotValue - spotCost,
-            winRate: stats.winRate,
-            avgRRR: stats.avgRRR,
-            totalTrades: stats.totalTrades,
-            profitFactor: stats.profitFactor,
-        });
-        setCalendarData(calendar);
-        setAllocationData(allocation);
-        setLoading(false);
-    }, []);
-
-    useEffect(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        fetchData();
-    }, [fetchData]);
-
-    const totalPortfolio = data.futuresBalance + data.spotValue;
-    const totalPnL = data.futuresPnL + data.spotPnL;
+    const totalPortfolio = safeData.futuresBalance + safeData.spotValue;
+    const totalPnL = safeData.futuresPnL + safeData.spotPnL;
 
     return (
         <div className="space-y-6">
@@ -112,7 +54,7 @@ export function DashboardView() {
                         </p>
                         <div className="flex items-baseline justify-center gap-1 mb-6">
                             <span className="text-muted-foreground/50 text-2xl md:text-3xl font-bold">
-                                {data.futuresBalance + data.spotValue < 0 ? "-" : ""}
+                                {safeData.futuresBalance + safeData.spotValue < 0 ? "-" : ""}
                             </span>
                             <span className="text-4xl sm:text-5xl md:text-7xl font-bold font-mono tracking-tighter text-foreground drop-shadow-sm">
                                 {loading ? "..." : formatCurrency(Math.abs(totalPortfolio)).replace(/[^0-9.,]/g, '')}
@@ -160,8 +102,8 @@ export function DashboardView() {
                     </CardHeader>
                     <CardContent className="pt-6">
                         <PortfolioDistribution
-                            spotValue={data.spotValue}
-                            futuresValue={data.futuresBalance}
+                            spotValue={safeData.spotValue}
+                            futuresValue={safeData.futuresBalance}
                             compact
                         />
                     </CardContent>
@@ -182,10 +124,10 @@ export function DashboardView() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold font-mono">
-                            {loading ? "..." : formatCurrency(data.futuresBalance)}
+                            {loading ? "..." : formatCurrency(safeData.futuresBalance)}
                         </div>
-                        <p className={`text-sm mt-1 font-medium flex items-center gap-1 ${data.futuresPnL >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {data.futuresPnL >= 0 ? '+' : ''}{formatCurrency(data.futuresPnL)}
+                        <p className={`text-sm mt-1 font-medium flex items-center gap-1 ${safeData.futuresPnL >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {safeData.futuresPnL >= 0 ? '+' : ''}{formatCurrency(safeData.futuresPnL)}
                             <span className="text-[10px] opacity-70 text-muted-foreground">P&L</span>
                         </p>
                     </CardContent>
@@ -203,10 +145,10 @@ export function DashboardView() {
                     </CardHeader>
                     <CardContent>
                         <div className="text-2xl font-bold font-mono">
-                            {loading ? "..." : formatCurrency(data.spotValue)}
+                            {loading ? "..." : formatCurrency(safeData.spotValue)}
                         </div>
-                        <p className={`text-sm mt-1 font-medium flex items-center gap-1 ${data.spotPnL >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
-                            {data.spotPnL >= 0 ? '+' : ''}{formatCurrency(data.spotPnL)}
+                        <p className={`text-sm mt-1 font-medium flex items-center gap-1 ${safeData.spotPnL >= 0 ? 'text-emerald-500' : 'text-red-500'}`}>
+                            {safeData.spotPnL >= 0 ? '+' : ''}{formatCurrency(safeData.spotPnL)}
                             <span className="text-[10px] opacity-70 text-muted-foreground">P&L</span>
                         </p>
                     </CardContent>
@@ -223,11 +165,11 @@ export function DashboardView() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold font-mono ${data.winRate >= 50 ? 'text-emerald-500' : 'text-muted-foreground'}`}>
-                            {data.winRate.toFixed(1)}%
+                        <div className={`text-2xl font-bold font-mono ${safeData.winRate >= 50 ? 'text-emerald-500' : 'text-muted-foreground'}`}>
+                            {safeData.winRate.toFixed(1)}%
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                            {data.totalTrades} total trades
+                            {safeData.totalTrades} total trades
                         </p>
                     </CardContent>
                 </Card>
@@ -243,11 +185,11 @@ export function DashboardView() {
                         </div>
                     </CardHeader>
                     <CardContent>
-                        <div className={`text-2xl font-bold font-mono ${data.profitFactor >= 1.5 ? 'text-emerald-500' : data.profitFactor >= 1 ? 'text-blue-500' : 'text-red-500'}`}>
-                            {data.profitFactor.toFixed(2)}
+                        <div className={`text-2xl font-bold font-mono ${safeData.profitFactor >= 1.5 ? 'text-emerald-500' : safeData.profitFactor >= 1 ? 'text-blue-500' : 'text-red-500'}`}>
+                            {safeData.profitFactor.toFixed(2)}
                         </div>
                         <p className="text-sm text-muted-foreground mt-1">
-                            RRR: 1:{data.avgRRR.toFixed(1)}
+                            RRR: 1:{safeData.avgRRR.toFixed(1)}
                         </p>
                     </CardContent>
                 </Card>
@@ -266,7 +208,7 @@ export function DashboardView() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
-                        <CalendarHeatmap data={calendarData} />
+                        <CalendarHeatmap data={safeData.calendarData} />
                     </CardContent>
                 </Card>
 
@@ -281,7 +223,7 @@ export function DashboardView() {
                         </CardTitle>
                     </CardHeader>
                     <CardContent className="pt-6">
-                        <AllocationChart data={allocationData} />
+                        <AllocationChart data={safeData.allocationData} />
                     </CardContent>
                 </Card>
             </div>

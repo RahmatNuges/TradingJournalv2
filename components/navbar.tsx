@@ -81,22 +81,39 @@ export function Navbar() {
                                             <Button
                                                 variant="outline"
                                                 size="sm"
-                                                className="gap-2 border-purple-500/50 text-purple-500 hover:bg-purple-500/10"
+                                                className="gap-2 border-emerald-500/50 text-emerald-500 hover:bg-emerald-500/10"
                                             >
                                                 <Shield className="h-4 w-4" />
                                                 Admin
                                             </Button>
                                         </Link>
                                     )}
-                                    <div className="flex items-center gap-2 px-3 py-1 rounded-md bg-secondary/50">
-                                        <User className="h-4 w-4" />
-                                        <span className="text-sm text-muted-foreground max-w-[150px] truncate">
-                                            {user.email}
-                                        </span>
+                                    {/* User Avatar Dropdown */}
+                                    <div className="relative group">
+                                        <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            className="rounded-full bg-secondary hover:bg-secondary/80"
+                                        >
+                                            <User className="h-4 w-4" />
+                                        </Button>
+                                        {/* Dropdown Menu */}
+                                        <div className="absolute right-0 top-full mt-2 w-64 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                                            <div className="rounded-lg border border-border bg-card shadow-lg p-2">
+                                                <div className="px-3 py-2 border-b border-border mb-2">
+                                                    <p className="text-xs text-muted-foreground">Masuk sebagai</p>
+                                                    <p className="text-sm font-medium truncate">{user.email}</p>
+                                                </div>
+                                                <button
+                                                    onClick={handleSignOut}
+                                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md text-red-500 hover:bg-red-500/10 transition-colors"
+                                                >
+                                                    <LogOut className="h-4 w-4" />
+                                                    Logout
+                                                </button>
+                                            </div>
+                                        </div>
                                     </div>
-                                    <Button variant="ghost" size="icon" onClick={handleSignOut} title="Logout">
-                                        <LogOut className="h-4 w-4" />
-                                    </Button>
                                 </div>
                             ) : (
                                 !isAuthPage && (

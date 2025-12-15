@@ -18,7 +18,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { formatCurrency, formatPercent } from "@/lib/calculations";
-import { deleteSpotTransaction } from "@/lib/data-service";
+import { deleteSpotTransaction, deleteSpotHolding } from "@/lib/data-service";
 
 interface HoldingWithValues {
     symbol: string;
@@ -59,6 +59,16 @@ export function HoldingsTable({ holdings, onRefresh }: HoldingsTableProps) {
         onRefresh?.();
     };
 
+    const handleDeleteHolding = async (e: React.MouseEvent, symbol: string) => {
+        e.stopPropagation(); // Prevent row click
+        if (!confirm(`Hapus semua history trading untuk ${symbol}? Ini tidak bisa dibatalkan.`)) return;
+
+        setDeletingId(symbol);
+        await deleteSpotHolding(symbol);
+        setDeletingId(null);
+        onRefresh?.();
+    };
+
     if (holdings.length === 0) {
         return (
             <div className="text-center py-8 text-muted-foreground">
@@ -79,6 +89,7 @@ export function HoldingsTable({ holdings, onRefresh }: HoldingsTableProps) {
                         <TableHead className="text-right">Value</TableHead>
                         <TableHead className="text-right">P&L</TableHead>
                         <TableHead className="text-right">Allocation</TableHead>
+                        <TableHead></TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -114,6 +125,17 @@ export function HoldingsTable({ holdings, onRefresh }: HoldingsTableProps) {
                             </TableCell>
                             <TableCell className="text-right font-mono">
                                 {holding.allocation.toFixed(1)}%
+                            </TableCell>
+                            <TableCell>
+                                <Button
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={(e) => handleDeleteHolding(e, holding.symbol)}
+                                    disabled={deletingId === holding.symbol}
+                                    className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 h-8 w-8 p-0"
+                                >
+                                    {deletingId === holding.symbol ? "..." : "×"}
+                                </Button>
                             </TableCell>
                         </TableRow>
                     ))}

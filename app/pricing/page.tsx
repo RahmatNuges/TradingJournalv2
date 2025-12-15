@@ -56,7 +56,7 @@ export default function PricingPage() {
             case 1:
                 return <Star className="h-8 w-8 text-blue-500" />;
             case 2:
-                return <Crown className="h-8 w-8 text-purple-500" />;
+                return <Crown className="h-8 w-8 text-emerald-500" />;
             default:
                 return <Zap className="h-8 w-8" />;
         }
@@ -97,7 +97,7 @@ export default function PricingPage() {
                                 </div>
                             )}
                             {index === 2 && (
-                                <div className="absolute top-0 right-0 bg-purple-500 text-white px-3 py-1 text-xs font-medium rounded-bl-lg">
+                                <div className="absolute top-0 right-0 bg-emerald-500 text-white px-3 py-1 text-xs font-medium rounded-bl-lg">
                                     HEMAT
                                 </div>
                             )}

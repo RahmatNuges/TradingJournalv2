@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { Navbar } from "@/components/navbar";
+import { Footer } from "@/components/footer";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AuthProvider } from "@/contexts/auth-context";
 import { CurrencyProvider } from "@/contexts/currency-context";
@@ -38,7 +39,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-background`}>
+      <body className={`${inter.variable} font-sans antialiased min-h-screen bg-background flex flex-col`}>
         <ThemeProvider
           attribute="class"
           defaultTheme="dark"
@@ -49,9 +50,10 @@ export default function RootLayout({
             <AuthProvider>
               <SubscriptionProvider>
                 <Navbar />
-                <main className="container mx-auto px-4 py-6 max-w-7xl">
+                <main className="container mx-auto px-4 py-6 max-w-7xl flex-1">
                   {children}
                 </main>
+                <Footer />
               </SubscriptionProvider>
             </AuthProvider>
           </CurrencyProvider>

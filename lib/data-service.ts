@@ -90,6 +90,32 @@ export async function deleteSpotTransaction(id: string): Promise<boolean> {
     return true;
 }
 
+export async function deleteSpotHolding(symbol: string): Promise<boolean> {
+    if (!supabase) {
+        console.warn('Supabase not configured');
+        return false;
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return false;
+    }
+
+    const { error } = await supabase
+        .from('spot_transactions')
+        .delete()
+        .eq('user_id', userId)
+        .eq('symbol', symbol);
+
+    if (error) {
+        console.error('Error deleting spot holding:', error);
+        return false;
+    }
+
+    return true;
+}
+
 // =====================================================
 // FUTURES TRADES
 // =====================================================

@@ -6,7 +6,7 @@ import { useState } from "react";
 import { cn } from "@/lib/utils";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { CurrencySwitcher } from "@/components/currency-switcher";
-import { Menu, X, LogOut, User, LayoutDashboard, TrendingUp, Wallet, Shield } from "lucide-react";
+import { Menu, X, LogOut, User, LayoutDashboard, TrendingUp, Wallet, Shield, ShoppingBag } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
 import { useSubscription } from "@/contexts/subscription-context";
@@ -104,6 +104,13 @@ export function Navbar() {
                                                     <p className="text-xs text-muted-foreground">Masuk sebagai</p>
                                                     <p className="text-sm font-medium truncate">{user.email}</p>
                                                 </div>
+                                                <Link
+                                                    href="/my-orders"
+                                                    className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md text-foreground hover:bg-secondary transition-colors"
+                                                >
+                                                    <ShoppingBag className="h-4 w-4" />
+                                                    Orderan Saya
+                                                </Link>
                                                 <button
                                                     onClick={handleSignOut}
                                                     className="flex items-center gap-2 w-full px-3 py-2 text-sm rounded-md text-red-500 hover:bg-red-500/10 transition-colors"

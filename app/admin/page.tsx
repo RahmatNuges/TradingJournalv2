@@ -8,23 +8,31 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ShoppingCart, Package, Ticket, Users, TrendingUp, Plus, Pencil, Trash2 } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
+import { ShoppingCart, Package, Ticket, Users, TrendingUp, Plus, Pencil, Trash2, Eye, CheckCircle, XCircle, ExternalLink } from "lucide-react";
 import { ProductDialog } from "@/components/admin/product-dialog";
 import { CouponDialog } from "@/components/admin/coupon-dialog";
 import { SubscriptionDialog } from "@/components/admin/subscription-dialog";
+import Image from "next/image";
 
 // Types
 interface Order {
     id: string;
+    user_id: string;
     user_email: string;
+    product_id: string;
+    external_id: string;
     amount_original: number;
     discount_amount: number;
     amount_final: number;
     status: string;
     created_at: string;
     paid_at: string | null;
-    products: { name: string } | null;
-    coupons: { code: string } | null;
+    bank_name: string | null;
+    bank_account_name: string | null;
+    payment_proof_url: string | null;
+    admin_viewed: boolean;
+    products: { name: string; duration_days: number } | null;
 }
 
 interface Product {
@@ -32,6 +40,7 @@ interface Product {
     name: string;
     description: string;
     price_idr: number;
+    discount_price_idr: number | null;
     duration_days: number;
     is_active: boolean;
 }
@@ -91,6 +100,10 @@ export default function AdminPage() {
     const [editingCoupon, setEditingCoupon] = useState<Coupon | null>(null);
     const [editingSubscription, setEditingSubscription] = useState<Subscription | null>(null);
 
+    // Order review states
+    const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+    const [isProcessing, setIsProcessing] = useState(false);
+
     // Check admin status
     useEffect(() => {
         if (authLoading) return;
@@ -118,12 +131,15 @@ export default function AdminPage() {
 
         try {
             // Load orders
-            const { data: ordersData } = await supabase
+            const { data: ordersData, error: ordersError } = await supabase
                 .from("orders")
-                .select("*, products(name), coupons(code)")
+                .select("*, products(name)")
                 .order("created_at", { ascending: false })
                 .limit(50);
 
+            if (ordersError) {
+                console.error("Error loading orders:", ordersError);
+            }
             if (ordersData) setOrders(ordersData);
 
             // Load products
@@ -214,6 +230,8 @@ export default function AdminPage() {
                 return <Badge className="bg-gray-500/10 text-gray-500 border-gray-500/20">Kadaluarsa</Badge>;
             case "FAILED":
                 return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Gagal</Badge>;
+            case "REJECTED":
+                return <Badge className="bg-red-500/10 text-red-500 border-red-500/20">Ditolak</Badge>;
             default:
                 return <Badge variant="outline">{status}</Badge>;
         }
@@ -266,6 +284,92 @@ export default function AdminPage() {
         if (!supabase || !confirm("Yakin ingin menghapus subscription ini?")) return;
         await supabase.from("subscriptions").delete().eq("id", id);
         loadData();
+    };
+
+    // Order review handlers
+    const handleMarkAsViewed = async (orderId: string) => {
+        if (!supabase) return;
+        await supabase
+            .from("orders")
+            .update({ admin_viewed: true })
+            .eq("id", orderId);
+
+        // Update local state
+        setOrders(prev => prev.map(o =>
+            o.id === orderId ? { ...o, admin_viewed: true } : o
+        ));
+    };
+
+    const handleApprove = async (order: Order) => {
+        if (!supabase) return;
+        if (!confirm("Setujui pembayaran ini? User akan otomatis berlangganan.")) return;
+
+        setIsProcessing(true);
+        try {
+            // 1. Update order status to PAID
+            const { error: orderError } = await supabase
+                .from("orders")
+                .update({
+                    status: "PAID",
+                    paid_at: new Date().toISOString(),
+                    admin_viewed: true
+                })
+                .eq("id", order.id);
+
+            if (orderError) throw orderError;
+
+            // 2. Create subscription
+            const durationDays = order.products?.duration_days || 30;
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + durationDays);
+
+            const { error: subError } = await supabase
+                .from("subscriptions")
+                .upsert({
+                    user_id: order.user_id,
+                    order_id: order.id,
+                    plan_name: order.products?.name || "Premium",
+                    starts_at: new Date().toISOString(),
+                    expires_at: expiresAt.toISOString(),
+                    is_active: true,
+                }, { onConflict: "user_id" });
+
+            if (subError) throw subError;
+
+            setSelectedOrder(null);
+            loadData();
+        } catch (error) {
+            console.error("Error approving order:", error);
+            alert("Gagal menyetujui order. Cek console untuk detail.");
+        } finally {
+            setIsProcessing(false);
+        }
+    };
+
+    const handleReject = async (order: Order) => {
+        if (!supabase) return;
+        if (!confirm("Tolak pembayaran ini?")) return;
+
+        setIsProcessing(true);
+        try {
+            const { error } = await supabase
+                .from("orders")
+                .update({
+                    status: "REJECTED",
+                    admin_viewed: true
+                })
+                .eq("id", order.id);
+
+            if (error) throw error;
+
+            setSelectedOrder(null);
+            loadData();
+        } catch (error) {
+            console.error("Error rejecting order:", error);
+            alert("Gagal menolak order.");
+        } finally {
+            setIsProcessing(false);
+        }
     };
 
     if (authLoading || loading) {
@@ -362,12 +466,33 @@ export default function AdminPage() {
                                             <th className="text-right py-3 px-2 font-medium">Total</th>
                                             <th className="text-center py-3 px-2 font-medium">Status</th>
                                             <th className="text-right py-3 px-2 font-medium">Tanggal</th>
+                                            <th className="text-right py-3 px-2 font-medium">Aksi</th>
                                         </tr>
                                     </thead>
                                     <tbody>
                                         {orders.map((order) => (
-                                            <tr key={order.id} className="border-b border-border/50 hover:bg-secondary/30">
-                                                <td className="py-3 px-2">{order.user_email}</td>
+                                            <tr
+                                                key={order.id}
+                                                className={`border-b border-border/50 hover:bg-secondary/30 cursor-pointer transition-colors
+                                                    ${order.status === "PENDING" && !order.admin_viewed ? "bg-yellow-500/5" : ""}`}
+                                                onClick={() => {
+                                                    setSelectedOrder(order);
+                                                    if (order.status === "PENDING" && !order.admin_viewed) {
+                                                        handleMarkAsViewed(order.id);
+                                                    }
+                                                }}
+                                            >
+                                                <td className="py-3 px-2">
+                                                    <div className="flex items-center gap-2">
+                                                        {order.user_email}
+                                                        {order.status === "PENDING" && !order.admin_viewed && (
+                                                            <span className="relative flex h-2 w-2">
+                                                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                                                                <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 <td className="py-3 px-2">{order.products?.name || "-"}</td>
                                                 <td className="py-3 px-2 text-right font-mono">{formatRupiah(order.amount_original)}</td>
                                                 <td className="py-3 px-2 text-right font-mono text-green-500">
@@ -376,11 +501,27 @@ export default function AdminPage() {
                                                 <td className="py-3 px-2 text-right font-mono font-medium">{formatRupiah(order.amount_final)}</td>
                                                 <td className="py-3 px-2 text-center">{getStatusBadge(order.status)}</td>
                                                 <td className="py-3 px-2 text-right text-muted-foreground">{formatDate(order.created_at)}</td>
+                                                <td className="py-3 px-2 text-right">
+                                                    <Button
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        className="h-8 w-8 p-0"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedOrder(order);
+                                                            if (order.status === "PENDING" && !order.admin_viewed) {
+                                                                handleMarkAsViewed(order.id);
+                                                            }
+                                                        }}
+                                                    >
+                                                        <Eye className="h-4 w-4" />
+                                                    </Button>
+                                                </td>
                                             </tr>
                                         ))}
                                         {orders.length === 0 && (
                                             <tr>
-                                                <td colSpan={7} className="py-8 text-center text-muted-foreground">
+                                                <td colSpan={8} className="py-8 text-center text-muted-foreground">
                                                     Belum ada order
                                                 </td>
                                             </tr>
@@ -420,7 +561,20 @@ export default function AdminPage() {
                                             </div>
                                         </div>
                                         <div className="flex items-center gap-4">
-                                            <div className="text-xl font-bold">{formatRupiah(product.price_idr)}</div>
+                                            <div className="text-right">
+                                                {product.discount_price_idr ? (
+                                                    <>
+                                                        <div className="text-sm text-muted-foreground line-through">
+                                                            {formatRupiah(product.price_idr)}
+                                                        </div>
+                                                        <div className="text-xl font-bold text-emerald-500">
+                                                            {formatRupiah(product.discount_price_idr)}
+                                                        </div>
+                                                    </>
+                                                ) : (
+                                                    <div className="text-xl font-bold">{formatRupiah(product.price_idr)}</div>
+                                                )}
+                                            </div>
                                             <div className="flex gap-1">
                                                 <Button variant="ghost" size="icon" onClick={() => handleEditProduct(product)}>
                                                     <Pencil className="h-4 w-4" />
@@ -598,6 +752,107 @@ export default function AdminPage() {
                 subscription={editingSubscription}
                 onSave={loadData}
             />
+
+            {/* Order Review Dialog */}
+            <Dialog open={!!selectedOrder} onOpenChange={(open) => !open && setSelectedOrder(null)}>
+                <DialogContent className="max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle>Review Pembayaran</DialogTitle>
+                        <DialogDescription>ID: {selectedOrder?.external_id}</DialogDescription>
+                    </DialogHeader>
+
+                    {selectedOrder && (
+                        <div className="grid gap-6">
+                            {/* Order Details */}
+                            <div className="grid grid-cols-2 gap-4 text-sm">
+                                <div>
+                                    <span className="text-muted-foreground block">Email User</span>
+                                    <span className="font-medium">{selectedOrder.user_email}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Paket</span>
+                                    <span className="font-medium">{selectedOrder.products?.name || "-"}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Bank Pengirim</span>
+                                    <span className="font-medium">{selectedOrder.bank_name || "-"}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Nama Rekening</span>
+                                    <span className="font-medium">{selectedOrder.bank_account_name || "-"}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Nominal</span>
+                                    <span className="font-bold text-lg">{formatRupiah(selectedOrder.amount_final)}</span>
+                                </div>
+                                <div>
+                                    <span className="text-muted-foreground block">Waktu Upload</span>
+                                    <span className="font-medium">{formatDate(selectedOrder.created_at)}</span>
+                                </div>
+                            </div>
+
+                            {/* Payment Proof */}
+                            {selectedOrder.payment_proof_url && (
+                                <div className="space-y-2">
+                                    <span className="text-sm text-muted-foreground">Bukti Transfer</span>
+                                    <div className="relative w-full aspect-[4/3] rounded-lg overflow-hidden border border-border bg-secondary/20">
+                                        <Image
+                                            src={selectedOrder.payment_proof_url}
+                                            alt="Bukti Transfer"
+                                            fill
+                                            className="object-contain"
+                                        />
+                                    </div>
+                                    <a
+                                        href={selectedOrder.payment_proof_url}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="text-sm text-primary hover:underline flex items-center gap-1"
+                                    >
+                                        <ExternalLink className="h-3 w-3" />
+                                        Buka gambar asli dalam tab baru
+                                    </a>
+                                </div>
+                            )}
+
+                            {/* Actions */}
+                            {selectedOrder.status === "PENDING" && (
+                                <div className="flex gap-3 pt-4 border-t border-border">
+                                    <Button
+                                        variant="destructive"
+                                        className="flex-1"
+                                        onClick={() => handleReject(selectedOrder)}
+                                        disabled={isProcessing}
+                                    >
+                                        <XCircle className="h-4 w-4 mr-2" />
+                                        Tolak
+                                    </Button>
+                                    <Button
+                                        className="flex-1 bg-green-600 hover:bg-green-700"
+                                        onClick={() => handleApprove(selectedOrder)}
+                                        disabled={isProcessing}
+                                    >
+                                        <CheckCircle className="h-4 w-4 mr-2" />
+                                        Setujui & Aktifkan
+                                    </Button>
+                                </div>
+                            )}
+
+                            {/* Status Info for non-pending */}
+                            {selectedOrder.status !== "PENDING" && (
+                                <div className="text-center py-4">
+                                    {getStatusBadge(selectedOrder.status)}
+                                    {selectedOrder.paid_at && (
+                                        <p className="text-sm text-muted-foreground mt-2">
+                                            Dibayar: {formatDate(selectedOrder.paid_at)}
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

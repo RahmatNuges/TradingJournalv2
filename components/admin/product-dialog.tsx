@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -15,6 +15,7 @@ interface ProductDialogProps {
         name: string;
         description: string;
         price_idr: number;
+        discount_price_idr: number | null;
         duration_days: number;
         is_active: boolean;
     } | null;
@@ -23,11 +24,24 @@ interface ProductDialogProps {
 
 export function ProductDialog({ open, onOpenChange, product, onSave }: ProductDialogProps) {
     const [loading, setLoading] = useState(false);
-    const [name, setName] = useState(product?.name || "");
-    const [description, setDescription] = useState(product?.description || "");
-    const [priceIdr, setPriceIdr] = useState(product?.price_idr?.toString() || "");
-    const [durationDays, setDurationDays] = useState(product?.duration_days?.toString() || "30");
-    const [isActive, setIsActive] = useState(product?.is_active ?? true);
+    const [name, setName] = useState("");
+    const [description, setDescription] = useState("");
+    const [priceIdr, setPriceIdr] = useState("");
+    const [discountPriceIdr, setDiscountPriceIdr] = useState("");
+    const [durationDays, setDurationDays] = useState("30");
+    const [isActive, setIsActive] = useState(true);
+
+    // Reset form when dialog opens/closes or product changes
+    useEffect(() => {
+        if (open) {
+            setName(product?.name || "");
+            setDescription(product?.description || "");
+            setPriceIdr(product?.price_idr?.toString() || "");
+            setDiscountPriceIdr(product?.discount_price_idr?.toString() || "");
+            setDurationDays(product?.duration_days?.toString() || "30");
+            setIsActive(product?.is_active ?? true);
+        }
+    }, [open, product]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -39,6 +53,7 @@ export function ProductDialog({ open, onOpenChange, product, onSave }: ProductDi
                 name,
                 description,
                 price_idr: parseInt(priceIdr),
+                discount_price_idr: discountPriceIdr ? parseInt(discountPriceIdr) : null,
                 duration_days: parseInt(durationDays),
                 is_active: isActive,
             };
@@ -51,20 +66,11 @@ export function ProductDialog({ open, onOpenChange, product, onSave }: ProductDi
 
             onSave();
             onOpenChange(false);
-            resetForm();
         } catch (error) {
             console.error("Error saving product:", error);
         } finally {
             setLoading(false);
         }
-    };
-
-    const resetForm = () => {
-        setName("");
-        setDescription("");
-        setPriceIdr("");
-        setDurationDays("30");
-        setIsActive(true);
     };
 
     return (
@@ -84,13 +90,29 @@ export function ProductDialog({ open, onOpenChange, product, onSave }: ProductDi
                     </div>
                     <div className="grid grid-cols-2 gap-4">
                         <div>
-                            <Label>Harga (IDR)</Label>
-                            <Input type="number" value={priceIdr} onChange={(e) => setPriceIdr(e.target.value)} required />
+                            <Label>Harga Normal (IDR)</Label>
+                            <Input
+                                type="number"
+                                value={priceIdr}
+                                onChange={(e) => setPriceIdr(e.target.value)}
+                                required
+                                placeholder="99000"
+                            />
                         </div>
                         <div>
-                            <Label>Durasi (hari)</Label>
-                            <Input type="number" value={durationDays} onChange={(e) => setDurationDays(e.target.value)} required />
+                            <Label>Harga Diskon (IDR) <span className="text-muted-foreground text-xs">- opsional</span></Label>
+                            <Input
+                                type="number"
+                                value={discountPriceIdr}
+                                onChange={(e) => setDiscountPriceIdr(e.target.value)}
+                                placeholder="Kosongkan jika tidak ada diskon"
+                                className="placeholder:text-xs"
+                            />
                         </div>
+                    </div>
+                    <div>
+                        <Label>Durasi (hari)</Label>
+                        <Input type="number" value={durationDays} onChange={(e) => setDurationDays(e.target.value)} required />
                     </div>
                     <div className="flex items-center gap-2">
                         <input

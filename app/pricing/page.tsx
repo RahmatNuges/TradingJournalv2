@@ -15,6 +15,7 @@ interface Product {
     name: string;
     description: string;
     price_idr: number;
+    discount_price_idr: number | null;
     duration_days: number;
 }
 
@@ -112,7 +113,18 @@ export default function PricingPage() {
                             </CardHeader>
                             <CardContent className="text-center">
                                 <div className="mb-6">
-                                    <span className="text-4xl font-bold">{formatRupiah(product.price_idr)}</span>
+                                    {product.discount_price_idr ? (
+                                        <>
+                                            <div className="text-lg text-muted-foreground line-through">
+                                                {formatRupiah(product.price_idr)}
+                                            </div>
+                                            <span className="text-4xl font-bold text-emerald-500">
+                                                {formatRupiah(product.discount_price_idr)}
+                                            </span>
+                                        </>
+                                    ) : (
+                                        <span className="text-4xl font-bold">{formatRupiah(product.price_idr)}</span>
+                                    )}
                                     <span className="text-muted-foreground">/{product.duration_days} hari</span>
                                 </div>
 

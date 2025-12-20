@@ -97,8 +97,8 @@ export function Footer() {
                         © {currentYear} Catat Cuanmu. All rights reserved.
                     </p>
                     <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                        <span>Pembayaran aman via</span>
-                        <span className="font-semibold">Xendit</span>
+                        <span>Pembayaran via</span>
+                        <span className="font-semibold">Transfer Bank BCA</span>
                     </div>
                 </div>
             </div>

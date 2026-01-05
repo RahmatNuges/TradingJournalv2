@@ -83,8 +83,26 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
                 stopLoss: tradeToEdit.stop_loss?.toString() || "",
                 takeProfit: tradeToEdit.take_profit?.toString() || "",
             });
+
+            // Format date for datetime-local input (YYYY-MM-DDTHH:mm)
+            let formattedDate = new Date().toISOString().slice(0, 16);
+            try {
+                const d = new Date(tradeToEdit.date);
+                if (!isNaN(d.getTime())) {
+                    // Convert to local time for datetime-local input
+                    const year = d.getFullYear();
+                    const month = String(d.getMonth() + 1).padStart(2, '0');
+                    const day = String(d.getDate()).padStart(2, '0');
+                    const hours = String(d.getHours()).padStart(2, '0');
+                    const minutes = String(d.getMinutes()).padStart(2, '0');
+                    formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+                }
+            } catch (e) {
+                console.error("Error parsing date:", e);
+            }
+
             setFormData({
-                date: tradeToEdit.date.slice(0, 16),
+                date: formattedDate,
                 pair: tradeToEdit.pair,
                 direction: tradeToEdit.direction,
                 leverage: tradeToEdit.leverage.toString(),
@@ -106,8 +124,18 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
             stopLoss: "",
             takeProfit: "",
         });
+
+        // Format current date for datetime-local input (local time)
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const hours = String(now.getHours()).padStart(2, '0');
+        const minutes = String(now.getMinutes()).padStart(2, '0');
+        const formattedDate = `${year}-${month}-${day}T${hours}:${minutes}`;
+
         setFormData({
-            date: new Date().toISOString().slice(0, 16),
+            date: formattedDate,
             pair: "BTCUSDT",
             direction: "LONG",
             leverage: "10",

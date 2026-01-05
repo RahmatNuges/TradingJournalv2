@@ -15,6 +15,8 @@ import { deleteFuturesTrade } from "@/lib/data-service";
 import type { FuturesTrade } from "@/types";
 import { useState } from "react";
 import { TradeDetailDialog } from "./trade-detail-dialog";
+import { TradeDialog } from "./trade-dialog";
+import { Pencil, Trash2 } from "lucide-react";
 
 interface TradeTableProps {
     trades: FuturesTrade[];
@@ -27,6 +29,8 @@ export function TradeTable({ trades, onRefresh }: TradeTableProps) {
     const { formatCurrency } = useFormatCurrency();
     const [selectedTrade, setSelectedTrade] = useState<FuturesTrade | null>(null);
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [editingTrade, setEditingTrade] = useState<FuturesTrade | null>(null);
+    const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
     const handleDelete = async (e: React.MouseEvent, id: string) => {
         e.stopPropagation();
@@ -35,6 +39,18 @@ export function TradeTable({ trades, onRefresh }: TradeTableProps) {
         setDeletingId(id);
         await deleteFuturesTrade(id);
         setDeletingId(null);
+        onRefresh?.();
+    };
+
+    const handleEdit = (e: React.MouseEvent, trade: FuturesTrade) => {
+        e.stopPropagation();
+        setEditingTrade(trade);
+        setIsEditDialogOpen(true);
+    };
+
+    const handleEditComplete = () => {
+        setEditingTrade(null);
+        setIsEditDialogOpen(false);
         onRefresh?.();
     };
 
@@ -59,7 +75,7 @@ export function TradeTable({ trades, onRefresh }: TradeTableProps) {
                         <TableHead className="text-right">Size</TableHead>
                         <TableHead className="text-right">P&L</TableHead>
                         <TableHead className="text-center">Result</TableHead>
-                        <TableHead></TableHead>
+                        <TableHead className="text-center">Aksi</TableHead>
                     </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -129,15 +145,27 @@ export function TradeTable({ trades, onRefresh }: TradeTableProps) {
                                 </Badge>
                             </TableCell>
                             <TableCell>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={(e) => handleDelete(e, trade.id)}
-                                    disabled={deletingId === trade.id}
-                                    className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 h-8 w-8 p-0"
-                                >
-                                    {deletingId === trade.id ? "..." : "×"}
-                                </Button>
+                                <div className="flex items-center justify-center gap-1">
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => handleEdit(e, trade)}
+                                        className="text-muted-foreground hover:text-blue-500 hover:bg-blue-500/10 h-8 w-8 p-0"
+                                        title="Edit trade"
+                                    >
+                                        <Pencil className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={(e) => handleDelete(e, trade.id)}
+                                        disabled={deletingId === trade.id}
+                                        className="text-muted-foreground hover:text-red-500 hover:bg-red-500/10 h-8 w-8 p-0"
+                                        title="Hapus trade"
+                                    >
+                                        {deletingId === trade.id ? "..." : <Trash2 className="h-4 w-4" />}
+                                    </Button>
+                                </div>
                             </TableCell>
                         </TableRow>
                     ))}
@@ -148,6 +176,13 @@ export function TradeTable({ trades, onRefresh }: TradeTableProps) {
                 trade={selectedTrade}
                 open={!!selectedTrade}
                 onOpenChange={(open) => !open && setSelectedTrade(null)}
+            />
+
+            <TradeDialog
+                open={isEditDialogOpen}
+                onOpenChange={setIsEditDialogOpen}
+                onSave={handleEditComplete}
+                tradeToEdit={editingTrade}
             />
         </>
     );

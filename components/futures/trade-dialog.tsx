@@ -27,19 +27,22 @@ import {
     formatCurrency,
 } from "@/lib/calculations";
 import { useCurrency, Currency } from "@/contexts/currency-context";
-import { addFuturesTrade } from "@/lib/data-service";
+import { addFuturesTrade, updateFuturesTrade } from "@/lib/data-service";
 import { cn } from "@/lib/utils";
+import type { FuturesTrade } from "@/types";
 
 interface TradeDialogProps {
     open: boolean;
     onOpenChange: (open: boolean) => void;
     onSave?: () => void;
+    tradeToEdit?: FuturesTrade | null;
 }
 
-export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
+export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDialogProps) {
     const { exchangeRate } = useCurrency();
     const [saving, setSaving] = useState(false);
     const [inputCurrency, setInputCurrency] = useState<Currency>("USD");
+    const isEditMode = !!tradeToEdit;
 
     // Store display values (in selected currency)
     const [displayData, setDisplayData] = useState({
@@ -68,6 +71,52 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
         stopLoss: 0,
         takeProfit: 0,
     });
+
+    // Populate form when editing
+    useEffect(() => {
+        if (tradeToEdit && open) {
+            setInputCurrency("USD");
+            setDisplayData({
+                entryPrice: tradeToEdit.entry_price.toString(),
+                exitPrice: tradeToEdit.exit_price.toString(),
+                positionSize: tradeToEdit.position_size.toString(),
+                stopLoss: tradeToEdit.stop_loss?.toString() || "",
+                takeProfit: tradeToEdit.take_profit?.toString() || "",
+            });
+            setFormData({
+                date: tradeToEdit.date.slice(0, 16),
+                pair: tradeToEdit.pair,
+                direction: tradeToEdit.direction,
+                leverage: tradeToEdit.leverage.toString(),
+                feePercent: tradeToEdit.fee_percent.toString(),
+                strategy: tradeToEdit.strategy || "",
+                notes: tradeToEdit.notes || "",
+            });
+        } else if (!open) {
+            // Reset form when dialog closes
+            resetForm();
+        }
+    }, [tradeToEdit, open]);
+
+    const resetForm = () => {
+        setDisplayData({
+            entryPrice: "",
+            exitPrice: "",
+            positionSize: "",
+            stopLoss: "",
+            takeProfit: "",
+        });
+        setFormData({
+            date: new Date().toISOString().slice(0, 16),
+            pair: "BTCUSDT",
+            direction: "LONG",
+            leverage: "10",
+            feePercent: "0.05",
+            strategy: "",
+            notes: "",
+        });
+        setInputCurrency("USD");
+    };
 
     // Calculate USD values whenever display values or currency changes
     useEffect(() => {
@@ -157,30 +206,19 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
             date: formData.date,
         };
 
-        const result = await addFuturesTrade(tradeData);
+        let result;
+        if (isEditMode && tradeToEdit) {
+            result = await updateFuturesTrade(tradeToEdit.id, tradeData);
+        } else {
+            result = await addFuturesTrade(tradeData);
+        }
+
         setSaving(false);
 
         if (result) {
             onOpenChange(false);
             onSave?.();
-            // Reset form
-            setDisplayData({
-                entryPrice: "",
-                exitPrice: "",
-                positionSize: "",
-                stopLoss: "",
-                takeProfit: "",
-            });
-            setFormData({
-                date: new Date().toISOString().slice(0, 16),
-                pair: "BTCUSDT",
-                direction: "LONG",
-                leverage: "10",
-                feePercent: "0.05",
-                strategy: "",
-                notes: "",
-            });
-            setInputCurrency("USD");
+            resetForm();
         }
     };
 
@@ -191,7 +229,7 @@ export function TradeDialog({ open, onOpenChange, onSave }: TradeDialogProps) {
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="flex flex-row items-center justify-between">
-                    <DialogTitle>Catat Trade Baru</DialogTitle>
+                    <DialogTitle>{isEditMode ? "Edit Trade" : "Catat Trade Baru"}</DialogTitle>
                     {/* Global Currency Switch - Toggle Style */}
                     <button
                         type="button"

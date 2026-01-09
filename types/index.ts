@@ -56,6 +56,12 @@ export interface FuturesTrade {
     notes: string | null;
     date: string;
     created_at: string;
+    // New fields for Open Positions feature
+    status: 'OPEN' | 'CLOSED';
+    technical_notes: string | null;
+    psychology_notes: string | null;
+    planned_rr: number | null;
+    psychology_state: string | null;
 }
 
 export interface TradingStats {

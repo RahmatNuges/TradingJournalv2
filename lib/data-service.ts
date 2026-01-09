@@ -212,6 +212,81 @@ export async function deleteFuturesTrade(id: string): Promise<boolean> {
     return true;
 }
 
+// Get only OPEN positions
+export async function getOpenTrades(): Promise<FuturesTrade[]> {
+    if (!supabase) {
+        console.warn('Supabase not configured');
+        return [];
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return [];
+    }
+
+    const { data, error } = await supabase
+        .from('futures_trades')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('status', 'OPEN')
+        .order('date', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching open trades:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+// Get only CLOSED positions (for history)
+export async function getClosedTrades(): Promise<FuturesTrade[]> {
+    if (!supabase) {
+        console.warn('Supabase not configured');
+        return [];
+    }
+
+    const userId = await getCurrentUserId();
+    if (!userId) {
+        console.warn('No authenticated user');
+        return [];
+    }
+
+    const { data, error } = await supabase
+        .from('futures_trades')
+        .select('*')
+        .eq('user_id', userId)
+        .or('status.eq.CLOSED,status.is.null')
+        .order('date', { ascending: false });
+
+    if (error) {
+        console.error('Error fetching closed trades:', error);
+        return [];
+    }
+
+    return data || [];
+}
+
+// Close an open position
+export async function closePosition(
+    id: string,
+    exitData: {
+        exit_price: number;
+        pnl: number;
+        net_pnl: number;
+        pnl_percent: number;
+        fee_amount: number;
+        rrr: number | null;
+        result: 'WIN' | 'LOSS' | 'BE';
+    }
+): Promise<FuturesTrade | null> {
+    return updateFuturesTrade(id, {
+        ...exitData,
+        status: 'CLOSED',
+    });
+}
+
 // =====================================================
 // BALANCE HISTORY
 // =====================================================

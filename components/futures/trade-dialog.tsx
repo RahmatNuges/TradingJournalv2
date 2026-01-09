@@ -232,6 +232,12 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
             strategy: formData.strategy || null,
             notes: formData.notes || null,
             date: formData.date,
+            // New fields for Open Positions (manual entry = already closed)
+            status: "CLOSED" as const,
+            technical_notes: null,
+            psychology_notes: null,
+            planned_rr: null,
+            psychology_state: null,
         };
 
         let result;

@@ -38,6 +38,16 @@ interface TradeDialogProps {
     tradeToEdit?: FuturesTrade | null;
 }
 
+const PSYCHOLOGY_STATES = [
+    { value: "confident", label: "Confident", color: "bg-green-500" },
+    { value: "calm", label: "Calm", color: "bg-blue-500" },
+    { value: "neutral", label: "Neutral", color: "bg-gray-500" },
+    { value: "anxious", label: "Anxious", color: "bg-yellow-500" },
+    { value: "fomo", label: "FOMO", color: "bg-orange-500" },
+    { value: "revenge", label: "Revenge", color: "bg-red-500" },
+    { value: "greedy", label: "Greedy", color: "bg-purple-500" },
+];
+
 export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDialogProps) {
     const { exchangeRate } = useCurrency();
     const [saving, setSaving] = useState(false);
@@ -61,6 +71,9 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
         feePercent: "0.05",
         strategy: "",
         notes: "",
+        technicalNotes: "",
+        psychologyNotes: "",
+        psychologyState: "neutral",
     });
 
     // Calculated values (always in USD)
@@ -109,6 +122,9 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
                 feePercent: tradeToEdit.fee_percent.toString(),
                 strategy: tradeToEdit.strategy || "",
                 notes: tradeToEdit.notes || "",
+                technicalNotes: tradeToEdit.technical_notes || "",
+                psychologyNotes: tradeToEdit.psychology_notes || "",
+                psychologyState: tradeToEdit.psychology_state || "neutral",
             });
         } else if (!open) {
             // Reset form when dialog closes
@@ -142,6 +158,9 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
             feePercent: "0.05",
             strategy: "",
             notes: "",
+            technicalNotes: "",
+            psychologyNotes: "",
+            psychologyState: "neutral",
         });
         setInputCurrency("USD");
     };
@@ -232,12 +251,12 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
             strategy: formData.strategy || null,
             notes: formData.notes || null,
             date: formData.date,
-            // New fields for Open Positions (manual entry = already closed)
-            status: "CLOSED" as const,
-            technical_notes: null,
-            psychology_notes: null,
-            planned_rr: null,
-            psychology_state: null,
+            // New fields for Open Positions
+            status: (isEditMode && tradeToEdit?.status) || "CLOSED" as const,
+            technical_notes: formData.technicalNotes || null,
+            psychology_notes: formData.psychologyNotes || null,
+            planned_rr: (isEditMode && tradeToEdit?.planned_rr) || null,
+            psychology_state: formData.psychologyState || null,
         };
 
         let result;
@@ -454,9 +473,57 @@ export function TradeDialog({ open, onOpenChange, onSave, tradeToEdit }: TradeDi
                             value={formData.notes}
                             onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
                             placeholder="Alasan entry, evaluasi, dll..."
-                            rows={3}
+                            rows={2}
                         />
                     </div>
+
+                    {/* Psychology State - Show in edit mode or when there's existing data */}
+                    {(isEditMode || formData.psychologyState !== "neutral") && (
+                        <div className="space-y-2">
+                            <Label>Kondisi Psikologis</Label>
+                            <div className="flex flex-wrap gap-2">
+                                {PSYCHOLOGY_STATES.map((state) => (
+                                    <button
+                                        key={state.value}
+                                        type="button"
+                                        onClick={() => setFormData({ ...formData, psychologyState: state.value })}
+                                        className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${formData.psychologyState === state.value
+                                            ? `${state.color} text-white ring-2 ring-offset-2 ring-offset-background`
+                                            : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                                            }`}
+                                    >
+                                        {state.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Technical Notes - Show in edit mode or when there's existing data */}
+                    {(isEditMode || formData.technicalNotes) && (
+                        <div className="space-y-2">
+                            <Label>Setup Teknikal</Label>
+                            <Textarea
+                                value={formData.technicalNotes}
+                                onChange={(e) => setFormData({ ...formData, technicalNotes: e.target.value })}
+                                placeholder="Break of structure, FVG, CHoCH, dll..."
+                                rows={2}
+                            />
+                        </div>
+                    )}
+
+                    {/* Psychology Notes - Show in edit mode or when there's existing data */}
+                    {(isEditMode || formData.psychologyNotes) && (
+                        <div className="space-y-2">
+                            <Label>Catatan Psikologi</Label>
+                            <Textarea
+                                value={formData.psychologyNotes}
+                                onChange={(e) => setFormData({ ...formData, psychologyNotes: e.target.value })}
+                                placeholder="Kondisi mental, disiplin, dll..."
+                                rows={2}
+                            />
+                        </div>
+                    )}
 
                     {/* Actions */}
                     <div className="flex justify-end gap-2 pt-4">

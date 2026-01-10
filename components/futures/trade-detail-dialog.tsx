@@ -1,4 +1,3 @@
-
 "use client";
 
 import {
@@ -11,7 +10,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { formatCurrency, formatPercent } from "@/lib/calculations";
 import type { FuturesTrade } from "@/types";
-import { Calendar, Target, TrendingUp, Scale, FileText, ArrowRight } from "lucide-react";
+import { Calendar, Target, TrendingUp, Scale, FileText, Brain } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 
 interface TradeDetailDialogProps {
@@ -20,12 +19,22 @@ interface TradeDetailDialogProps {
     onOpenChange: (open: boolean) => void;
 }
 
+const PSYCHOLOGY_STATE_LABELS: Record<string, string> = {
+    confident: "Confident",
+    calm: "Calm",
+    neutral: "Neutral",
+    anxious: "Anxious",
+    fomo: "FOMO",
+    revenge: "Revenge",
+    greedy: "Greedy",
+};
+
 export function TradeDetailDialog({ trade, open, onOpenChange }: TradeDetailDialogProps) {
     if (!trade) return null;
 
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
-            <DialogContent className="max-w-2xl">
+            <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="pr-10">
                     <div className="flex items-center justify-between">
                         <DialogTitle className="text-xl flex items-center gap-2">
@@ -112,25 +121,69 @@ export function TradeDetailDialog({ trade, open, onOpenChange }: TradeDetailDial
                                 <span className="font-mono">{formatCurrency(trade.exit_price)}</span>
                             </div>
                             <div className="flex justify-between items-center">
-                                <span className="text-sm">Risk/Reward</span>
+                                <span className="text-sm">Actual R:R</span>
                                 <span className="font-mono">{trade.rrr ? `1:${trade.rrr}` : '-'}</span>
                             </div>
+                            {trade.planned_rr && (
+                                <div className="flex justify-between items-center">
+                                    <span className="text-sm">Planned R:R</span>
+                                    <span className="font-mono text-primary">1:{trade.planned_rr}</span>
+                                </div>
+                            )}
                             <div className="flex justify-between items-center text-sm">
-                                <span className="text-muted-foreground">Setup/Strategy</span>
+                                <span className="text-muted-foreground">Strategy</span>
                                 <span className="font-medium">{trade.strategy || '-'}</span>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <div className="space-y-3">
-                    <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-                        <FileText className="h-4 w-4" /> Notes & Analysis
-                    </h4>
-                    <div className="bg-secondary/30 p-4 rounded-lg min-h-[100px] text-sm leading-relaxed whitespace-pre-wrap">
-                        {trade.notes || <span className="text-muted-foreground italic">Tidak ada catatan untuk trade ini.</span>}
+                {/* Technical Notes */}
+                {trade.technical_notes && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <Target className="h-4 w-4" /> Setup Teknikal
+                        </h4>
+                        <div className="bg-secondary/30 p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
+                            {trade.technical_notes}
+                        </div>
                     </div>
-                </div>
+                )}
+
+                {/* Psychology Notes */}
+                {(trade.psychology_state || trade.psychology_notes) && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <Brain className="h-4 w-4" /> Kondisi Psikologi
+                        </h4>
+                        <div className="bg-secondary/30 p-4 rounded-lg space-y-2">
+                            {trade.psychology_state && (
+                                <div className="flex items-center gap-2">
+                                    <Badge variant="outline">
+                                        {PSYCHOLOGY_STATE_LABELS[trade.psychology_state] || trade.psychology_state}
+                                    </Badge>
+                                </div>
+                            )}
+                            {trade.psychology_notes && (
+                                <div className="text-sm leading-relaxed whitespace-pre-wrap">
+                                    {trade.psychology_notes}
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+
+                {/* General Notes */}
+                {trade.notes && (
+                    <div className="space-y-3">
+                        <h4 className="text-sm font-medium text-muted-foreground flex items-center gap-2">
+                            <FileText className="h-4 w-4" /> Catatan Lainnya
+                        </h4>
+                        <div className="bg-secondary/30 p-4 rounded-lg text-sm leading-relaxed whitespace-pre-wrap">
+                            {trade.notes}
+                        </div>
+                    </div>
+                )}
             </DialogContent>
         </Dialog>
     );

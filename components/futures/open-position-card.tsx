@@ -13,14 +13,14 @@ interface OpenPositionCardProps {
     onEdit?: (trade: FuturesTrade) => void;
 }
 
-const PSYCHOLOGY_STATE_LABELS: Record<string, { emoji: string; label: string; color: string }> = {
-    confident: { emoji: "😎", label: "Confident", color: "text-green-500" },
-    calm: { emoji: "😌", label: "Calm", color: "text-blue-500" },
-    neutral: { emoji: "😐", label: "Neutral", color: "text-gray-500" },
-    anxious: { emoji: "😰", label: "Anxious", color: "text-yellow-500" },
-    fomo: { emoji: "🤑", label: "FOMO", color: "text-orange-500" },
-    revenge: { emoji: "😤", label: "Revenge", color: "text-red-500" },
-    greedy: { emoji: "💰", label: "Greedy", color: "text-purple-500" },
+const PSYCHOLOGY_STATE_LABELS: Record<string, { label: string; color: string }> = {
+    confident: { label: "Confident", color: "text-green-500" },
+    calm: { label: "Calm", color: "text-blue-500" },
+    neutral: { label: "Neutral", color: "text-gray-500" },
+    anxious: { label: "Anxious", color: "text-yellow-500" },
+    fomo: { label: "FOMO", color: "text-orange-500" },
+    revenge: { label: "Revenge", color: "text-red-500" },
+    greedy: { label: "Greedy", color: "text-purple-500" },
 };
 
 export function OpenPositionCard({ trade, onClose, onEdit }: OpenPositionCardProps) {
@@ -64,7 +64,7 @@ export function OpenPositionCard({ trade, onClose, onEdit }: OpenPositionCardPro
                         )}
                         {psychState && (
                             <div className={`text-xs mt-1 ${psychState.color}`}>
-                                {psychState.emoji} {psychState.label}
+                                {psychState.label}
                                 {isHighRisk && <AlertTriangle className="h-3 w-3 inline ml-1 text-yellow-500" />}
                             </div>
                         )}
@@ -94,7 +94,7 @@ export function OpenPositionCard({ trade, onClose, onEdit }: OpenPositionCardPro
                 {/* Technical Notes */}
                 {trade.technical_notes && (
                     <div className="mb-3 p-2 rounded bg-secondary/30 text-sm">
-                        <div className="text-xs text-muted-foreground mb-1">📊 Setup</div>
+                        <div className="text-xs text-muted-foreground mb-1">Setup</div>
                         <div className="text-foreground/80 line-clamp-2">{trade.technical_notes}</div>
                     </div>
                 )}
@@ -102,7 +102,7 @@ export function OpenPositionCard({ trade, onClose, onEdit }: OpenPositionCardPro
                 {/* Psychology Notes */}
                 {trade.psychology_notes && (
                     <div className="mb-3 p-2 rounded bg-secondary/30 text-sm">
-                        <div className="text-xs text-muted-foreground mb-1">🧠 Psikologi</div>
+                        <div className="text-xs text-muted-foreground mb-1">Psikologi</div>
                         <div className="text-foreground/80 line-clamp-2">{trade.psychology_notes}</div>
                     </div>
                 )}
@@ -119,7 +119,7 @@ export function OpenPositionCard({ trade, onClose, onEdit }: OpenPositionCardPro
                         className="flex-1"
                         variant="default"
                     >
-                        🔒 Close Position
+                        Close Position
                     </Button>
                     {onEdit && (
                         <Button
@@ -127,7 +127,7 @@ export function OpenPositionCard({ trade, onClose, onEdit }: OpenPositionCardPro
                             variant="outline"
                             size="icon"
                         >
-                            ✏️
+                            Edit
                         </Button>
                     )}
                 </div>

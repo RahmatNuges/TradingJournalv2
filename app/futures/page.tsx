@@ -5,7 +5,6 @@ import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { TradeTable } from "@/components/futures/trade-table";
 import { TradeDialog } from "@/components/futures/trade-dialog";
 import { BalanceDialog } from "@/components/futures/balance-dialog";
@@ -20,7 +19,7 @@ import { getOpenTrades, getClosedTrades } from "@/lib/data-service";
 import { useAuth } from "@/contexts/auth-context";
 import { useSubscription } from "@/contexts/subscription-context";
 import type { FuturesTrade } from "@/types";
-import { Target, Scale, TrendingUp, BarChart2, ArrowUpRight, Wallet, Rocket, History } from "lucide-react";
+import { Target, Scale, TrendingUp, BarChart2, ArrowUpRight, Wallet, Rocket } from "lucide-react";
 
 export default function FuturesPage() {
     const router = useRouter();
@@ -131,25 +130,10 @@ export default function FuturesPage() {
                         <span className="hidden sm:inline">Sesuaikan</span> Saldo
                     </Button>
                     <Button size="sm" onClick={() => setIsOpenPositionDialogOpen(true)} className="text-xs sm:text-sm bg-primary">
-                        🚀 Open Position
+                        + Open Position
                     </Button>
                 </div>
             </div>
-
-            {/* Open Positions Alert */}
-            {openTrades.length > 0 && (
-                <Card className="border-primary/50 bg-primary/5">
-                    <CardContent className="py-3 px-4 flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                            <Rocket className="h-5 w-5 text-primary" />
-                            <span className="font-medium">{openTrades.length} Posisi Terbuka</span>
-                        </div>
-                        <Button variant="outline" size="sm" onClick={() => document.querySelector('[data-value="open"]')?.dispatchEvent(new Event('click', { bubbles: true }))}>
-                            Lihat Posisi
-                        </Button>
-                    </CardContent>
-                </Card>
-            )}
 
             {/* Balance Card */}
             <Card>
@@ -250,40 +234,28 @@ export default function FuturesPage() {
             {/* Position Size Calculator */}
             <PositionCalculator />
 
-            {/* Tabs: Open Positions & Trade History */}
-            <Tabs defaultValue="open" className="w-full">
-                <TabsList className="grid w-full grid-cols-2 mb-4">
-                    <TabsTrigger value="open" className="flex items-center gap-2" data-value="open">
-                        <Rocket className="h-4 w-4" />
-                        Open Positions
+            {/* Open Positions Section */}
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <Rocket className="h-5 w-5 text-primary" />
+                        <CardTitle>Open Positions</CardTitle>
                         {openTrades.length > 0 && (
-                            <Badge variant="secondary" className="ml-1 h-5 w-5 p-0 flex items-center justify-center text-xs">
-                                {openTrades.length}
-                            </Badge>
+                            <Badge variant="secondary">{openTrades.length}</Badge>
                         )}
-                    </TabsTrigger>
-                    <TabsTrigger value="history" className="flex items-center gap-2">
-                        <History className="h-4 w-4" />
-                        Riwayat Trade
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="open">
+                    </div>
+                    <Button size="sm" onClick={() => setIsOpenPositionDialogOpen(true)}>
+                        + Open Position
+                    </Button>
+                </CardHeader>
+                <CardContent>
                     {loadingTrades ? (
                         <div className="text-center py-8 text-muted-foreground">Memuat...</div>
                     ) : openTrades.length === 0 ? (
-                        <Card>
-                            <CardContent className="py-12 text-center">
-                                <Rocket className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                                <h3 className="text-lg font-medium mb-2">Tidak ada posisi terbuka</h3>
-                                <p className="text-muted-foreground text-sm mb-4">
-                                    Catat kondisi psikologis dan setup teknikal saat membuka posisi baru!
-                                </p>
-                                <Button onClick={() => setIsOpenPositionDialogOpen(true)}>
-                                    🚀 Open Position
-                                </Button>
-                            </CardContent>
-                        </Card>
+                        <div className="text-center py-8 text-muted-foreground">
+                            <p>Tidak ada posisi terbuka</p>
+                            <p className="text-sm mt-1">Catat kondisi psikologis dan setup teknikal saat membuka posisi baru</p>
+                        </div>
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                             {openTrades.map((trade) => (
@@ -295,27 +267,25 @@ export default function FuturesPage() {
                             ))}
                         </div>
                     )}
-                </TabsContent>
+                </CardContent>
+            </Card>
 
-                <TabsContent value="history">
-                    <Card>
-                        <CardHeader className="flex flex-row items-center justify-between">
-                            <CardTitle>Riwayat Trade ({closedTrades.length})</CardTitle>
-                            <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => setIsTradeDialogOpen(true)}
-                                className="text-xs"
-                            >
-                                + Catat Manual
-                            </Button>
-                        </CardHeader>
-                        <CardContent>
-                            <TradeTable trades={closedTrades} onRefresh={() => { refetch(); fetchTrades(); }} />
-                        </CardContent>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+            {/* Trade History Section */}
+            <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                    <CardTitle>Riwayat Trade ({closedTrades.length})</CardTitle>
+                    <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setIsTradeDialogOpen(true)}
+                    >
+                        + Catat Manual
+                    </Button>
+                </CardHeader>
+                <CardContent>
+                    <TradeTable trades={closedTrades} onRefresh={() => { refetch(); fetchTrades(); }} />
+                </CardContent>
+            </Card>
 
             {/* Dialogs */}
             <OpenPositionDialog

@@ -29,13 +29,13 @@ interface OpenPositionDialogProps {
 }
 
 const PSYCHOLOGY_STATES = [
-    { value: "confident", label: "😎 Confident", color: "bg-green-500" },
-    { value: "calm", label: "😌 Calm", color: "bg-blue-500" },
-    { value: "neutral", label: "😐 Neutral", color: "bg-gray-500" },
-    { value: "anxious", label: "😰 Anxious", color: "bg-yellow-500" },
-    { value: "fomo", label: "🤑 FOMO", color: "bg-orange-500" },
-    { value: "revenge", label: "😤 Revenge", color: "bg-red-500" },
-    { value: "greedy", label: "💰 Greedy", color: "bg-purple-500" },
+    { value: "confident", label: "Confident", color: "bg-green-500" },
+    { value: "calm", label: "Calm", color: "bg-blue-500" },
+    { value: "neutral", label: "Neutral", color: "bg-gray-500" },
+    { value: "anxious", label: "Anxious", color: "bg-yellow-500" },
+    { value: "fomo", label: "FOMO", color: "bg-orange-500" },
+    { value: "revenge", label: "Revenge", color: "bg-red-500" },
+    { value: "greedy", label: "Greedy", color: "bg-purple-500" },
 ];
 
 export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionDialogProps) {
@@ -173,7 +173,7 @@ export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionD
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
                 <DialogHeader className="flex flex-row items-center justify-between">
-                    <DialogTitle>🚀 Open Position</DialogTitle>
+                    <DialogTitle>Open Position</DialogTitle>
                     <button
                         type="button"
                         onClick={toggleCurrency}
@@ -217,8 +217,8 @@ export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionD
                                     <SelectValue />
                                 </SelectTrigger>
                                 <SelectContent>
-                                    <SelectItem value="LONG">🟢 LONG</SelectItem>
-                                    <SelectItem value="SHORT">🔴 SHORT</SelectItem>
+                                    <SelectItem value="LONG">LONG</SelectItem>
+                                    <SelectItem value="SHORT">SHORT</SelectItem>
                                 </SelectContent>
                             </Select>
                         </div>
@@ -293,7 +293,7 @@ export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionD
 
                     {/* Psychology State */}
                     <div className="space-y-2">
-                        <Label>🧠 Kondisi Psikologis</Label>
+                        <Label>Kondisi Psikologis</Label>
                         <div className="flex flex-wrap gap-2">
                             {PSYCHOLOGY_STATES.map((state) => (
                                 <button
@@ -301,8 +301,8 @@ export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionD
                                     type="button"
                                     onClick={() => setFormData({ ...formData, psychologyState: state.value })}
                                     className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all ${formData.psychologyState === state.value
-                                            ? `${state.color} text-white ring-2 ring-offset-2 ring-offset-background ring-${state.color}`
-                                            : "bg-secondary text-muted-foreground hover:bg-secondary/80"
+                                        ? `${state.color} text-white ring-2 ring-offset-2 ring-offset-background ring-${state.color}`
+                                        : "bg-secondary text-muted-foreground hover:bg-secondary/80"
                                         }`}
                                 >
                                     {state.label}
@@ -313,7 +313,7 @@ export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionD
 
                     {/* Technical Notes */}
                     <div className="space-y-2">
-                        <Label>📊 Setup Teknikal</Label>
+                        <Label>Setup Teknikal</Label>
                         <Textarea
                             value={formData.technicalNotes}
                             onChange={(e) => setFormData({ ...formData, technicalNotes: e.target.value })}
@@ -324,7 +324,7 @@ export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionD
 
                     {/* Psychology Notes */}
                     <div className="space-y-2">
-                        <Label>🧠 Catatan Psikologi</Label>
+                        <Label>Catatan Psikologi</Label>
                         <Textarea
                             value={formData.psychologyNotes}
                             onChange={(e) => setFormData({ ...formData, psychologyNotes: e.target.value })}
@@ -335,7 +335,7 @@ export function OpenPositionDialog({ open, onOpenChange, onSave }: OpenPositionD
 
                     {/* Submit */}
                     <Button type="submit" className="w-full" disabled={saving}>
-                        {saving ? "Menyimpan..." : "🚀 Buka Posisi"}
+                        {saving ? "Menyimpan..." : "Buka Posisi"}
                     </Button>
                 </form>
             </DialogContent>

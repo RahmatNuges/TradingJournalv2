@@ -61,12 +61,12 @@ export function Footer() {
                         <h3 className="font-semibold">Support</h3>
                         <ul className="space-y-2 text-sm text-muted-foreground">
                             <li>
-                                <a href="mailto:support@catatcuanmu.com" className="hover:text-primary transition-colors">
+                                <a href="mailto:naikin.bisnis@gmail.com" className="hover:text-primary transition-colors">
                                     Email Support
                                 </a>
                             </li>
                             <li>
-                                <a href="https://wa.me/62812345678" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
+                                <a href="https://wa.me/62895389615060" target="_blank" rel="noopener noreferrer" className="hover:text-primary transition-colors">
                                     WhatsApp
                                 </a>
                             </li>
